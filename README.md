@@ -1,1 +1,3 @@
 # Fixify
+
+Our fixing app
