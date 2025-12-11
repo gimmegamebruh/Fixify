@@ -126,18 +126,21 @@ class NewRequestViewController: UIViewController {
         stack.addArrangedSubview(submitButton)
     }
     
-    private func addImageToScroll(_ image: UIImage) {
+    private func updatePhotoPreview(_ image: UIImage) {
+        photosStack.arrangedSubviews.forEach { $0.removeFromSuperview() } // clear old preview
+
         let imgView = UIImageView(image: image)
         imgView.contentMode = .scaleAspectFill
         imgView.clipsToBounds = true
         imgView.layer.cornerRadius = 8
         imgView.translatesAutoresizingMaskIntoConstraints = false
 
-        imgView.widthAnchor.constraint(equalToConstant: 100).isActive = true
-        imgView.heightAnchor.constraint(equalToConstant: 100).isActive = true
+        imgView.widthAnchor.constraint(equalToConstant: 130).isActive = true
+        imgView.heightAnchor.constraint(equalToConstant: 130).isActive = true
 
         photosStack.addArrangedSubview(imgView)
     }
+
 
 
 
@@ -166,8 +169,10 @@ class NewRequestViewController: UIViewController {
             description: descriptionView.text,
             status: .pending,
             dateCreated: Date(),
-            createdBy: currentStudentID
+            createdBy: currentStudentID,
+            photo: selectedImage
         )
+
 
         store.add(newRequest)
         navigationController?.popViewController(animated: true)
@@ -196,8 +201,9 @@ extension NewRequestViewController: PHPickerViewControllerDelegate {
                 result.itemProvider.loadObject(ofClass: UIImage.self) { object, error in
                     if let image = object as? UIImage {
                         DispatchQueue.main.async {
-                            self.selectedImages.append(image)
-                            self.addImageToScroll(image)
+                            self.selectedImage = image
+                            self.updatePhotoPreview(image)
+
                         }
                     }
                 }

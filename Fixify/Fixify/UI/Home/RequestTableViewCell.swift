@@ -11,6 +11,8 @@ class RequestTableViewCell: UITableViewCell {
     private let categoryLabel = UILabel()
     private let dateLabel = UILabel()
     private let statusLabel = UILabel()
+    private let thumbnailImageView = UIImageView()
+
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -54,6 +56,14 @@ class RequestTableViewCell: UITableViewCell {
         statusLabel.textAlignment = .center
         statusLabel.layer.cornerRadius = 10
         statusLabel.clipsToBounds = true
+        
+        thumbnailImageView.contentMode = .scaleAspectFill
+        thumbnailImageView.clipsToBounds = true
+        thumbnailImageView.layer.cornerRadius = 8
+        thumbnailImageView.translatesAutoresizingMaskIntoConstraints = false
+
+        cardView.addSubview(thumbnailImageView)
+
 
         contentView.addSubview(cardView)
 
@@ -76,7 +86,7 @@ class RequestTableViewCell: UITableViewCell {
             // Title
             titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
             titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: statusLabel.leadingAnchor, constant: -8),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: thumbnailImageView.leadingAnchor, constant: -12),
 
             // Status badge (top-right)
             statusLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 12),
@@ -103,7 +113,14 @@ class RequestTableViewCell: UITableViewCell {
             dateLabel.topAnchor.constraint(equalTo: categoryLabel.bottomAnchor, constant: 4),
             dateLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 12),
             dateLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
-            dateLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12)
+            dateLabel.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -12),
+            
+            // Thumbnail image on top-right
+            thumbnailImageView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
+            thumbnailImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -12),
+            thumbnailImageView.widthAnchor.constraint(equalToConstant: 60),
+            thumbnailImageView.heightAnchor.constraint(equalToConstant: 60),
+
         ])
     }
 
@@ -120,6 +137,9 @@ class RequestTableViewCell: UITableViewCell {
         statusLabel.text = request.status.displayName
         statusLabel.backgroundColor = request.status.color
         statusLabel.textColor = .white
+        
+        thumbnailImageView.image = request.photo
+
     }
 }
 

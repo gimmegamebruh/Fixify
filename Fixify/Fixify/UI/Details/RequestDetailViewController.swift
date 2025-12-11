@@ -17,7 +17,9 @@ class RequestDetailViewController: UIViewController {
     private let dateLabel = UILabel()
     private let descriptionTitleLabel = UILabel()
     private let descriptionLabel = UILabel()
-
+    
+    let photoView = UIImageView()
+    
     private let editButton = UIButton(type: .system)
     private let cancelButton = UIButton(type: .system)
 
@@ -92,6 +94,13 @@ class RequestDetailViewController: UIViewController {
 
         descriptionLabel.font = .systemFont(ofSize: 16)
         descriptionLabel.numberOfLines = 0
+        
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = 12
+        photoView.translatesAutoresizingMaskIntoConstraints = false
+        photoView.heightAnchor.constraint(equalToConstant: 220).isActive = true
+
     }
 
     private func setupButtons() {
@@ -106,16 +115,24 @@ class RequestDetailViewController: UIViewController {
     private func layoutUI() {
         contentView.addArrangedSubview(titleLabel)
         contentView.addArrangedSubview(statusLabel)
+
+        // --- PHOTO GOES HERE ---
+        contentView.addArrangedSubview(photoView)
+
         contentView.addArrangedSubview(locationLabel)
         contentView.addArrangedSubview(priorityLabel)
         contentView.addArrangedSubview(categoryLabel)
         contentView.addArrangedSubview(dateLabel)
+
         contentView.addArrangedSubview(descriptionTitleLabel)
         contentView.addArrangedSubview(descriptionLabel)
+
         contentView.setCustomSpacing(20, after: descriptionLabel)
+
         contentView.addArrangedSubview(editButton)
         contentView.addArrangedSubview(cancelButton)
     }
+
 
     private func refreshUI() {
         let request = store.request(at: index)
@@ -134,6 +151,8 @@ class RequestDetailViewController: UIViewController {
         statusLabel.text = request.status.displayName
         statusLabel.backgroundColor = request.status.color
         statusLabel.textColor = .white
+        
+        photoView.image = request.photo
 
         switch request.status {
         case .pending:

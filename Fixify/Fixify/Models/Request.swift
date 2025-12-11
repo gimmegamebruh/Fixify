@@ -1,5 +1,5 @@
+import UIKit
 
-import Foundation
 
 struct Request {
     var id: UUID
@@ -11,4 +11,6 @@ struct Request {
     var status: RequestStatus
     var dateCreated: Date
     var createdBy: String
+    var photo: UIImage?
+
 }
