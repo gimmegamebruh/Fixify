@@ -1,4 +1,5 @@
 import UIKit
+import PhotosUI
 
 class NewRequestViewController: UIViewController {
 
@@ -7,6 +8,12 @@ class NewRequestViewController: UIViewController {
 
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
+    private var selectedImage: UIImage?
+
+
+    private let photosScroll = UIScrollView()
+    private let photosStack = UIStackView()
+    private let addPhotoButton = UIButton(type: .system)
 
     private let titleField = UITextField()
     private let locationField = UITextField()
@@ -53,19 +60,49 @@ class NewRequestViewController: UIViewController {
         tf.placeholder = placeholder
         tf.borderStyle = .roundedRect
     }
-
     private func setupFields() {
+        // Text fields
         configureTextField(titleField, placeholder: "Title")
         configureTextField(locationField, placeholder: "Location")
         configureTextField(priorityField, placeholder: "Priority (e.g. High)")
         configureTextField(categoryField, placeholder: "Category (e.g. AC Issue)")
 
+        // Description
         descriptionView.font = .systemFont(ofSize: 16)
         descriptionView.layer.borderColor = UIColor.systemGray4.cgColor
         descriptionView.layer.borderWidth = 1
         descriptionView.layer.cornerRadius = 8
         descriptionView.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
+        // --- NEW: Add Photo button ---
+        addPhotoButton.setTitle("Add Photo", for: .normal)
+        addPhotoButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        addPhotoButton.setTitleColor(.systemBlue, for: .normal)
+        addPhotoButton.contentHorizontalAlignment = .leading
+        addPhotoButton.addTarget(self, action: #selector(addPhotoTapped), for: .touchUpInside)
+        addPhotoButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
+
+        // --- NEW: Photos horizontal scroll ---
+        photosScroll.translatesAutoresizingMaskIntoConstraints = false
+        photosScroll.showsHorizontalScrollIndicator = true
+        photosScroll.heightAnchor.constraint(equalToConstant: 100).isActive = true
+
+        photosStack.axis = .horizontal
+        photosStack.spacing = 8
+        photosStack.alignment = .center
+        photosStack.translatesAutoresizingMaskIntoConstraints = false
+
+        photosScroll.addSubview(photosStack)
+
+        NSLayoutConstraint.activate([
+            photosStack.topAnchor.constraint(equalTo: photosScroll.topAnchor),
+            photosStack.bottomAnchor.constraint(equalTo: photosScroll.bottomAnchor),
+            photosStack.leadingAnchor.constraint(equalTo: photosScroll.leadingAnchor, constant: 8),
+            photosStack.trailingAnchor.constraint(equalTo: photosScroll.trailingAnchor, constant: -8),
+            photosStack.heightAnchor.constraint(equalTo: photosScroll.heightAnchor)
+        ])
+
+        // Submit button
         submitButton.setTitle("Submit Request", for: .normal)
         submitButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
         submitButton.backgroundColor = .systemBlue
@@ -80,9 +117,29 @@ class NewRequestViewController: UIViewController {
         stack.addArrangedSubview(locationField)
         stack.addArrangedSubview(priorityField)
         stack.addArrangedSubview(categoryField)
+
+        // NEW: photo section between fields and description
+        stack.addArrangedSubview(addPhotoButton)
+        stack.addArrangedSubview(photosScroll)
+
         stack.addArrangedSubview(descriptionView)
         stack.addArrangedSubview(submitButton)
     }
+    
+    private func addImageToScroll(_ image: UIImage) {
+        let imgView = UIImageView(image: image)
+        imgView.contentMode = .scaleAspectFill
+        imgView.clipsToBounds = true
+        imgView.layer.cornerRadius = 8
+        imgView.translatesAutoresizingMaskIntoConstraints = false
+
+        imgView.widthAnchor.constraint(equalToConstant: 100).isActive = true
+        imgView.heightAnchor.constraint(equalToConstant: 100).isActive = true
+
+        photosStack.addArrangedSubview(imgView)
+    }
+
+
 
     @objc private func submitTapped() {
         guard
@@ -115,5 +172,38 @@ class NewRequestViewController: UIViewController {
         store.add(newRequest)
         navigationController?.popViewController(animated: true)
     }
+    
+    @objc private func addPhotoTapped() {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 1        // allow up to 5 photos
+        config.filter = .images          // only images
+
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+
+        present(picker, animated: true)
+    }
+
 }
+
+extension NewRequestViewController: PHPickerViewControllerDelegate {
+
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+
+        for result in results {
+            if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                result.itemProvider.loadObject(ofClass: UIImage.self) { object, error in
+                    if let image = object as? UIImage {
+                        DispatchQueue.main.async {
+                            self.selectedImages.append(image)
+                            self.addImageToScroll(image)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
