@@ -11,7 +11,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		57CD24BA2ED2DFEA00850C74 /* Exceptions for "Fixify" folder in "Fixify" target */ = {
+		243E25C62EED9CDA00CF8E1A /* Exceptions for "Fixify" folder in "Fixify" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -24,7 +24,7 @@
 		57CD24AA2ED2DFE900850C74 /* Fixify */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				57CD24BA2ED2DFEA00850C74 /* Exceptions for "Fixify" folder in "Fixify" target */,
+				243E25C62EED9CDA00CF8E1A /* Exceptions for "Fixify" folder in "Fixify" target */,
 			);
 			path = Fixify;
 			sourceTree = "<group>";
@@ -91,7 +91,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					57CD24A72ED2DFE900850C74 = {
 						CreatedOnToolsVersion = 16.4;
@@ -250,6 +250,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -306,6 +307,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
