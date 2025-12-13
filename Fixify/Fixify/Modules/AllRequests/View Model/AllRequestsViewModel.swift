@@ -2,20 +2,20 @@
 //  AllRequestsViewModel.swift
 //  Fixify
 //
-//  Created by BP-36-201-06 on 11/12/2025.
+//  Created by BP-36-201-02 on 13/12/2025.
 //
 
 
 import Foundation
 
 class AllRequestsViewModel {
-    
+
     private(set) var allRequests: [Request] = []
-    
+
     func loadDummyData() {
         allRequests = DummyRequests.data
     }
-    
+
     func filtered(_ filter: RequestFilter) -> [Request] {
         switch filter {
         case .lastWeek:

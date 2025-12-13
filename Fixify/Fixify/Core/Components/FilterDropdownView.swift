@@ -1,10 +1,16 @@
+//
+//  FilterDropdownView.swift
+//  Fixify
+//
+//  Created by BP-36-201-02 on 13/12/2025.
+//
+
+
 import UIKit
 
 class FilterDropdownView: UIView {
 
     var onSelectFilter: ((RequestFilter) -> Void)?
-
-    private let stack = UIStackView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -12,11 +18,10 @@ class FilterDropdownView: UIView {
         backgroundColor = .white
         layer.cornerRadius = 12
         layer.shadowOpacity = 0.2
-        layer.shadowRadius = 6
-        layer.shadowOffset = CGSize(width: 0, height: 3)
 
+        let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = 10
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
@@ -30,16 +35,13 @@ class FilterDropdownView: UIView {
         RequestFilter.allCases.forEach { filter in
             let btn = UIButton(type: .system)
             btn.setTitle(filter.rawValue, for: .normal)
-            btn.setTitleColor(.black, for: .normal)
             btn.contentHorizontalAlignment = .left
-
-            btn.addAction(UIAction(handler: { [weak self] _ in
+            btn.addAction(UIAction { [weak self] _ in
                 self?.onSelectFilter?(filter)
-            }), for: .touchUpInside)
-
+            }, for: .touchUpInside)
             stack.addArrangedSubview(btn)
         }
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required init?(coder: NSCoder) { fatalError() }
 }
