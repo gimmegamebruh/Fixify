@@ -3,7 +3,7 @@ import SwiftUI
 
 struct HomeVCPreview: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        UINavigationController(rootViewController: HomeViewController())
+        UINavigationController(rootViewController: HomeTableViewController())
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
