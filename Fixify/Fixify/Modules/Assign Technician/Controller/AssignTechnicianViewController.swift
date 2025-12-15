@@ -2,6 +2,9 @@ import UIKit
 
 final class AssignTechnicianViewController: UIViewController {
 
+    // MARK: - Callback
+    var onAssigned: ((String) -> Void)?
+
     private let viewModel: AssignTechnicianViewModel
     private let tableView = UITableView()
 
@@ -19,7 +22,7 @@ final class AssignTechnicianViewController: UIViewController {
         super.viewDidLoad()
 
         title = "Assign Technician"
-        view.backgroundColor = UIColor(white: 0.95, alpha: 1)
+        view.backgroundColor = .systemGroupedBackground
 
         setupTableView()
         setupPopup()
@@ -29,8 +32,10 @@ final class AssignTechnicianViewController: UIViewController {
     }
 
     private func setupTableView() {
-        tableView.register(TechnicianCell.self,
-                           forCellReuseIdentifier: TechnicianCell.identifier)
+        tableView.register(
+            TechnicianCell.self,
+            forCellReuseIdentifier: TechnicianCell.identifier
+        )
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
@@ -49,6 +54,7 @@ final class AssignTechnicianViewController: UIViewController {
     // MARK: - Popup
 
     private func setupPopup() {
+
         overlay.backgroundColor = UIColor.black.withAlphaComponent(0.4)
         overlay.alpha = 0
 
@@ -111,6 +117,11 @@ final class AssignTechnicianViewController: UIViewController {
     }
 
     @objc private func dismissPopup() {
+
+        if let techID = viewModel.assignedTechnicianID {
+            onAssigned?(techID)
+        }
+
         UIView.animate(withDuration: 0.2) {
             self.overlay.alpha = 0
         } completion: { _ in
@@ -118,8 +129,6 @@ final class AssignTechnicianViewController: UIViewController {
         }
     }
 }
-
-// MARK: - UITableViewDataSource
 
 extension AssignTechnicianViewController: UITableViewDataSource {
 
@@ -136,18 +145,17 @@ extension AssignTechnicianViewController: UITableViewDataSource {
             for: indexPath
         ) as! TechnicianCell
 
-        let technician = viewModel.technicians[indexPath.row]
+        let tech = viewModel.technicians[indexPath.row]
 
         cell.configure(
-            with: technician,
-            isAssigned: viewModel.isAssigned(technician.id)
+            with: tech,
+            isAssigned: viewModel.isAssigned(tech.id)
         )
 
         cell.assignButton.addAction(UIAction { [weak self] _ in
-            guard let self = self else { return }
-            self.viewModel.assignTechnician(technician.id)
-            self.tableView.reloadData()
-            self.showPopup()
+            self?.viewModel.assignTechnician(tech.id)
+            self?.tableView.reloadData()
+            self?.showPopup()
         }, for: .touchUpInside)
 
         return cell

@@ -14,7 +14,7 @@ final class RequestCell: UITableViewCell {
         v.backgroundColor = .white
         v.layer.cornerRadius = 18
         v.layer.shadowColor = UIColor.black.cgColor
-        v.layer.shadowOpacity = 0.1
+        v.layer.shadowOpacity = 0.08
         v.layer.shadowRadius = 8
         v.layer.shadowOffset = CGSize(width: 0, height: 4)
         return v
@@ -43,11 +43,11 @@ final class RequestCell: UITableViewCell {
 
     private let statusLabel: UILabel = {
         let lbl = UILabel()
-        lbl.font = .systemFont(ofSize: 13, weight: .semibold)
-        lbl.textAlignment = .center
+        lbl.font = .systemFont(ofSize: 12, weight: .semibold)
         lbl.textColor = .black
-        lbl.backgroundColor = UIColor.systemYellow
-        lbl.layer.cornerRadius = 8
+        lbl.textAlignment = .center
+        lbl.backgroundColor = .systemYellow
+        lbl.layer.cornerRadius = 10
         lbl.layer.masksToBounds = true
         return lbl
     }()
@@ -60,17 +60,18 @@ final class RequestCell: UITableViewCell {
         return iv
     }()
 
+    // 🔑 SMALLER ASSIGN BUTTON (FIGMA STYLE)
     private let assignButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Assign", for: .normal)
         btn.setTitleColor(.white, for: .normal)
         btn.backgroundColor = .systemBlue
-        btn.layer.cornerRadius = 10
-        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        btn.layer.cornerRadius = 12
+        btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         return btn
     }()
 
-    // MARK: - Constraint reference
+    // MARK: - Constraint refs
     private var imageHeightConstraint: NSLayoutConstraint!
 
     // MARK: - Init
@@ -83,18 +84,20 @@ final class RequestCell: UITableViewCell {
         contentView.backgroundColor = .clear
 
         contentView.addSubview(cardView)
+        cardView.translatesAutoresizingMaskIntoConstraints = false
 
-        [titleLabel,
-         locationLabel,
-         dateLabel,
-         statusLabel,
-         requestImageView,
-         assignButton].forEach {
+        [
+            titleLabel,
+            locationLabel,
+            dateLabel,
+            statusLabel,
+            requestImageView,
+            assignButton
+        ].forEach {
             cardView.addSubview($0)
             $0.translatesAutoresizingMaskIntoConstraints = false
         }
 
-        cardView.translatesAutoresizingMaskIntoConstraints = false
         setupConstraints()
 
         assignButton.addTarget(self,
@@ -119,13 +122,13 @@ final class RequestCell: UITableViewCell {
 
         statusLabel.text = request.status.rawValue
 
-        // 🔑 IMAGE HANDLING FIX
+        // Image handling (NO white space when missing)
         if let imageName = request.imageName,
            let image = UIImage(named: imageName) {
 
             requestImageView.image = image
             requestImageView.isHidden = false
-            imageHeightConstraint.constant = 180
+            imageHeightConstraint.constant = 160
 
         } else {
             requestImageView.image = nil
@@ -134,28 +137,36 @@ final class RequestCell: UITableViewCell {
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Action
 
     @objc private func assignTapped() {
         onAssignTap?()
     }
 
-    // MARK: - Layout
+    // MARK: - Layout (FIGMA MATCHED)
 
     private func setupConstraints() {
 
-        imageHeightConstraint = requestImageView.heightAnchor.constraint(equalToConstant: 180)
+        imageHeightConstraint = requestImageView.heightAnchor.constraint(equalToConstant: 160)
 
         NSLayoutConstraint.activate([
+
             // Card
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             cardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             cardView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
 
+            // Status (TOP RIGHT)
+            statusLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
+            statusLabel.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
+            statusLabel.heightAnchor.constraint(equalToConstant: 22),
+            statusLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 70),
+
             // Title
             titleLabel.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
             titleLabel.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: statusLabel.leadingAnchor, constant: -8),
 
             // Location
             locationLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
@@ -165,23 +176,17 @@ final class RequestCell: UITableViewCell {
             dateLabel.topAnchor.constraint(equalTo: locationLabel.bottomAnchor, constant: 6),
             dateLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
 
-            // Status
-            statusLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 10),
-            statusLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            statusLabel.widthAnchor.constraint(equalToConstant: 70),
-            statusLabel.heightAnchor.constraint(equalToConstant: 22),
-
             // Image
-            requestImageView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 12),
+            requestImageView.topAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 12),
             requestImageView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             requestImageView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
             imageHeightConstraint,
 
-            // Assign Button
+            // Assign button (SMALL, LEFT)
             assignButton.topAnchor.constraint(equalTo: requestImageView.bottomAnchor, constant: 16),
             assignButton.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            assignButton.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            assignButton.heightAnchor.constraint(equalToConstant: 44),
+            assignButton.widthAnchor.constraint(equalToConstant: 120),
+            assignButton.heightAnchor.constraint(equalToConstant: 40),
             assignButton.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16)
         ])
     }
