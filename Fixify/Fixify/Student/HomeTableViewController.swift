@@ -3,6 +3,12 @@ import UIKit
 final class HomeTableViewController: UITableViewController {
 
     private let store = RequestStore.shared
+    
+    private var currentFilter: RequestDateFilter = .all
+    private var filteredRequests: [Request] {
+        store.requests.filter { currentFilter.includes($0.dateCreated) }
+    }
+
 
     private let emptyLabel: UILabel = {
         let label = UILabel()
@@ -32,6 +38,14 @@ final class HomeTableViewController: UITableViewController {
             target: self,
             action: #selector(addTapped)
         )
+        
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(filterTapped)
+        )
+
 
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 350
@@ -83,7 +97,7 @@ final class HomeTableViewController: UITableViewController {
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
     ) -> Int {
-        store.requests.count
+        filteredRequests.count
     }
 
     override func tableView(
@@ -96,7 +110,7 @@ final class HomeTableViewController: UITableViewController {
             for: indexPath
         ) as! StudentRequestCardCell
 
-        let request = store.requests[indexPath.row]
+        let request = filteredRequests[indexPath.row]
         cell.configure(with: request)
 
         // EDIT
@@ -143,5 +157,20 @@ final class HomeTableViewController: UITableViewController {
 
         present(alert, animated: true)
     }
+    
+    @objc private func filterTapped() {
+        let sheet = UIAlertController(title: "Filter Requests", message: nil, preferredStyle: .actionSheet)
+
+        RequestDateFilter.allCases.forEach { filter in
+            sheet.addAction(UIAlertAction(title: filter.title, style: .default) { _ in
+                self.currentFilter = filter
+                self.tableView.reloadData()
+            })
+        }
+
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(sheet, animated: true)
+    }
+
 }
 
