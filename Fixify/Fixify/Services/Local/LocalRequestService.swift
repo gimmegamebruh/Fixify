@@ -5,7 +5,7 @@ final class LocalRequestService: RequestServicing {
     static let shared = LocalRequestService()
     private init() {}
 
-    private var storage = DummyRequests.data
+    private var storage: [Request] = DummyRequests.data
 
     func fetchAll(completion: @escaping ([Request]) -> Void) {
         completion(storage)
@@ -22,7 +22,7 @@ final class LocalRequestService: RequestServicing {
         }
 
         storage[index].assignedTechnicianID = technicianID
-        storage[index].status = .assigned
+        storage[index].status = .inProgress
         completion(true)
     }
 

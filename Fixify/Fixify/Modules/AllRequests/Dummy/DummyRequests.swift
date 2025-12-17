@@ -4,7 +4,6 @@ struct DummyRequests {
 
     static let data: [Request] = [
 
-        // COMPLETED
         Request(
             id: UUID().uuidString,
             title: "Projector Issue",
@@ -20,7 +19,6 @@ struct DummyRequests {
             completedDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())
         ),
 
-        // PENDING
         Request(
             id: UUID().uuidString,
             title: "Broken Chair",
@@ -36,7 +34,6 @@ struct DummyRequests {
             completedDate: nil
         ),
 
-        // ESCALATED - OVERDUE
         Request(
             id: UUID().uuidString,
             title: "AC Maintenance",
@@ -47,12 +44,11 @@ struct DummyRequests {
             status: .escalated,
             dateCreated: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
             createdBy: "student3",
-            imageName: "ac1",
+            imageName: nil,
             assignedTechnicianID: nil,
             completedDate: nil
         ),
 
-        // ESCALATED - URGENT
         Request(
             id: UUID().uuidString,
             title: "Water Leakage",

@@ -2,51 +2,81 @@ import UIKit
 
 final class EscalationDetailViewController: UIViewController {
 
-    private let service = LocalRequestService.shared
+    // MARK: - Dependencies
+    private let requestService: RequestServicing = LocalRequestService.shared
 
+    // MARK: - State
     private var request: Request
-    private var technicianReassigned = false
+    private let priorityOptions = ["Low", "Medium", "High"]
     private var selectedPriority: String?
 
-    private let priorities = ["Low", "Medium", "High"]
-    private let picker = UIPickerView()
+    // MARK: - UI
+    private let infoCard = UIView()
+    private let infoLabel = UILabel()
 
-    private let titleLabel = UILabel()
-    private let locationLabel = UILabel()
-    private let dateLabel = UILabel()
-    private let technicianLabel = UILabel()
-
+    private let statusLabel = UILabel()
     private let priorityField = UITextField()
+
     private let reassignButton = UIButton(type: .system)
     private let updateButton = UIButton(type: .system)
 
+    // MARK: - Init
     init(request: Request) {
         self.request = request
         super.init(nibName: nil, bundle: nil)
         title = "Escalation Details"
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) not implemented")
+    }
 
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
-
-        picker.delegate = self
-        picker.dataSource = self
-        priorityField.inputView = picker
-
         setupUI()
-        populate()
     }
 
+    // MARK: - UI Setup
     private func setupUI() {
 
-        titleLabel.font = .boldSystemFont(ofSize: 18)
+        // ---------- Info Card ----------
+        infoCard.backgroundColor = .white
+        infoCard.layer.cornerRadius = 14
+        infoCard.layer.shadowOpacity = 0.08
+        infoCard.layer.shadowRadius = 6
+        infoCard.layer.shadowOffset = CGSize(width: 0, height: 3)
 
-        priorityField.borderStyle = .roundedRect
+        infoLabel.numberOfLines = 0
+        infoLabel.font = .systemFont(ofSize: 16)
+        infoLabel.text = """
+        \(request.title) – \(request.location)
+        \(formattedDate(request.dateCreated))
+        Technician: \(request.assignedTechnicianID ?? "Unassigned")
+        """
+
+        infoCard.addSubview(infoLabel)
+        infoLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            infoLabel.topAnchor.constraint(equalTo: infoCard.topAnchor, constant: 16),
+            infoLabel.leadingAnchor.constraint(equalTo: infoCard.leadingAnchor, constant: 16),
+            infoLabel.trailingAnchor.constraint(equalTo: infoCard.trailingAnchor, constant: -16),
+            infoLabel.bottomAnchor.constraint(equalTo: infoCard.bottomAnchor, constant: -16)
+        ])
+
+        // ---------- Status ----------
+        statusLabel.text = escalationStatusText()
+        statusLabel.textColor = .systemRed
+        statusLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+
+        // ---------- Priority ----------
         priorityField.placeholder = "Select Priority"
+        priorityField.borderStyle = .roundedRect
+        priorityField.inputView = makePicker()
 
+        // ---------- Buttons ----------
         reassignButton.setTitle("Reassign Technician", for: .normal)
         reassignButton.backgroundColor = .systemBlue
         reassignButton.setTitleColor(.white, for: .normal)
@@ -61,20 +91,20 @@ final class EscalationDetailViewController: UIViewController {
         updateButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
         updateButton.addTarget(self, action: #selector(updateTapped), for: .touchUpInside)
 
+        // ---------- Stack ----------
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel,
-            locationLabel,
-            dateLabel,
-            technicianLabel,
+            infoCard,
+            statusLabel,
             priorityField,
             reassignButton,
             updateButton
         ])
+
         stack.axis = .vertical
-        stack.spacing = 16
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.spacing = 20
 
         view.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -83,84 +113,80 @@ final class EscalationDetailViewController: UIViewController {
         ])
     }
 
-    private func populate() {
-        titleLabel.text = request.title
-        locationLabel.text = request.location
-        dateLabel.text = DateFormatter.localizedString(
-            from: request.dateCreated,
-            dateStyle: .medium,
-            timeStyle: .none
-        )
-        technicianLabel.text = "Technician: \(request.assignedTechnicianID ?? "Unassigned")"
-        priorityField.text = request.priority
-    }
-
+    // MARK: - Actions
     @objc private func reassignTapped() {
-
         let vc = AssignTechnicianViewController(requestID: request.id)
-
-        vc.onAssigned = { [weak self] techID in
-            guard let self else { return }
-            self.request.assignedTechnicianID = techID
-            self.request.status = .assigned
-            self.technicianReassigned = true
-            self.technicianLabel.text = "Technician: \(techID)"
-        }
-
         navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func updateTapped() {
-
-        guard technicianReassigned else {
-            let alert = UIAlertController(
-                title: "No Changes",
-                message: "Reassign a technician before updating.",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
+        guard let priority = selectedPriority else {
+            showAlert("Please select priority")
             return
         }
 
-        var updatedRequest = request
-        if let priority = selectedPriority {
-            updatedRequest.priority = priority
-        }
+        // Update through service (SOURCE OF TRUTH)
+        var updated = request
+        updated.priority = priority
 
-        service.updateRequest(updatedRequest)
+        requestService.updateRequest(updated)
 
+        request = updated
+        showAlert("Data Updated Successfully ✅")
+    }
+
+    // MARK: - Helpers
+    private func makePicker() -> UIPickerView {
+        let picker = UIPickerView()
+        picker.dataSource = self
+        picker.delegate = self
+        return picker
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f.string(from: date)
+    }
+
+    private func escalationStatusText() -> String {
+        request.priority == "High" ? "Overdue" : "Escalated"
+    }
+
+    private func showAlert(_ message: String) {
         let alert = UIAlertController(
-            title: "Success",
-            message: "Request updated successfully ✅",
+            title: nil,
+            message: message,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            self.navigationController?.popViewController(animated: true)
-        })
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }
 
-extension EscalationDetailViewController: UIPickerViewDelegate, UIPickerViewDataSource {
+// MARK: - Picker
+extension EscalationDetailViewController: UIPickerViewDataSource, UIPickerViewDelegate {
 
     func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    numberOfRowsInComponent component: Int) -> Int {
-        priorities.count
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        priorityOptions.count
     }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    titleForRow row: Int,
-                    forComponent component: Int) -> String? {
-        priorities[row]
+    func pickerView(
+        _ pickerView: UIPickerView,
+        titleForRow row: Int,
+        forComponent component: Int
+    ) -> String? {
+        priorityOptions[row]
     }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    didSelectRow row: Int,
-                    inComponent component: Int) {
-        selectedPriority = priorities[row]
-        priorityField.text = priorities[row]
+    func pickerView(
+        _ pickerView: UIPickerView,
+        didSelectRow row: Int,
+        inComponent component: Int
+    ) {
+        selectedPriority = priorityOptions[row]
+        priorityField.text = priorityOptions[row]
     }
 }

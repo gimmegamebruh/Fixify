@@ -1,26 +1,63 @@
 import Foundation
 
-class AssignTechnicianViewModel {
+final class AssignTechnicianViewModel {
 
-    private let requestID: String
+    // MARK: - Dependencies
+    private let technicianService: TechnicianServicing
+    private let requestService: RequestServicing
+
+    // MARK: - State
     private(set) var technicians: [Technician] = []
-    private(set) var assignedTechnicianID: String?
+    private let requestID: String
 
-    init(requestID: String) {
+    // MARK: - Init
+    init(
+        requestID: String,
+        technicianService: TechnicianServicing = LocalTechnicianService.shared,
+        requestService: RequestServicing = LocalRequestService.shared
+    ) {
         self.requestID = requestID
+        self.technicianService = technicianService
+        self.requestService = requestService
     }
 
-    func loadDummyData() {
-        technicians = DummyTechnicians.data
-            .sorted { $0.activeJobs < $1.activeJobs }
+    // MARK: - Load (🔥 THIS IS WHAT WAS MISSING)
+    func load() {
+        technicianService.fetchAll { [weak self] techs in
+            guard let self else { return }
+            self.technicians = techs.sorted {
+                $0.activeJobs < $1.activeJobs
+            }
+        }
     }
 
-    func assignTechnician(_ technicianID: String) {
-        assignedTechnicianID = technicianID
-        print("Assigned technician \(technicianID) to request \(requestID)")
+    // MARK: - Access
+    func technician(at index: Int) -> Technician {
+        technicians[index]
     }
 
-    func isAssigned(_ technicianID: String) -> Bool {
-        assignedTechnicianID == technicianID
+    func isBusy(_ technician: Technician) -> Bool {
+        technician.activeJobs > 0
+    }
+
+    // MARK: - Assign
+    func assignTechnician(
+        _ technician: Technician,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard !isBusy(technician) else {
+            completion(false)
+            return
+        }
+
+        requestService.assignTechnician(
+            requestID: requestID,
+            technicianID: technician.id
+        ) { success in
+            if success {
+                LocalTechnicianService.shared.incrementJobs(for: technician.id)
+            }
+            completion(success)
+        }
     }
 }

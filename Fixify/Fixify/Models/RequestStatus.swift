@@ -1,3 +1,5 @@
+import Foundation
+
 enum RequestStatus: String, Codable {
     case pending = "Pending"
     case assigned = "Assigned"
