@@ -1,16 +1,23 @@
 import UIKit
 
+struct Request: Identifiable, Codable {
 
-struct Request {
-    var id: UUID
+    let id: String
     var title: String
-    var location: String
-    var priority: String
-    var category: String
     var description: String
+    var location: String
+    var category: String
+    var priority: RequestPriority
     var status: RequestStatus
-    var dateCreated: Date
-    var createdBy: String
-    var photo: UIImage?
+    let createdBy: String
+    var assignedTo: String?
+    let dateCreated: Date
+    var scheduledTime: Date?
 
+    // 🔥 NEW
+    var rating: Int?
+    var ratingComment: String?
+
+    var imageURL: String?
 }
+
