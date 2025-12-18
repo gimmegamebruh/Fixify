@@ -1,10 +1,14 @@
+//
+//  DummyTechnicians.swift
+//  Fixify
+//
+
 import Foundation
 
 struct DummyTechnicians {
 
     static let data: [Technician] = [
 
-        // ✅ FREE TECHNICIAN (CAN BE ASSIGNED)
         Technician(
             id: "T1",
             name: "Ahmed Hassan",
@@ -12,47 +16,27 @@ struct DummyTechnicians {
             specialization: "Electrical Technician",
             activeJobs: 0,
             isActive: true,
-            avatarName: nil,
-            metrics: nil
+            avatarName: nil
         ),
-        
-        Technician(
-            id: "T4",
-            name: "mohammed Hassan",
-            email: "ahmed@fixify.com",
-            specialization: "Electrical Technician",
-            activeJobs: 0,
-            isActive: true,
-            avatarName: nil,
-            metrics: nil
-        ),
-        
-        
 
-        // 🚫 BUSY TECHNICIAN (ASSIGN DISABLED)
         Technician(
             id: "T2",
-            name: "Fatima Ali",
-            email: "fatima@fixify.com",
+            name: "Mohammed Ali",
+            email: "mohammed@fixify.com",
             specialization: "HVAC Technician",
-            activeJobs: 1,
+            activeJobs: 0,
             isActive: true,
-            avatarName: nil,
-            metrics: nil
+            avatarName: nil
         ),
 
-        // 🚫 BUSY TECHNICIAN (ASSIGN DISABLED)
         Technician(
             id: "T3",
-            name: "Mohammed Salman",
-            email: "mohammed@fixify.com",
+            name: "Fatima Khalid",
+            email: "fatima@fixify.com",
             specialization: "Plumbing Technician",
-            activeJobs: 2,
+            activeJobs: 0,
             isActive: true,
-            avatarName: nil,
-            metrics: nil
+            avatarName: nil
         )
-        
-        
     ]
 }

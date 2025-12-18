@@ -1,3 +1,8 @@
+//
+//  AdminDashboardViewController.swift
+//  Fixify
+//
+
 import UIKit
 
 final class AdminDashboardViewController: UIViewController {
@@ -86,7 +91,13 @@ final class AdminDashboardViewController: UIViewController {
 
         let addTech = primaryButton("Add New Technician")
         let inventory = primaryButton("Manage Inventory")
+
         let metrics = primaryButton("View Technician Metrics")
+        metrics.addTarget(
+            self,
+            action: #selector(viewTechnicianMetricsTapped),
+            for: .touchUpInside
+        )
 
         let header = escalatedSectionHeader()
 
@@ -123,13 +134,16 @@ final class AdminDashboardViewController: UIViewController {
     private func escalatedSectionHeader() -> UIView {
 
         escalatedCountLabel.font = .boldSystemFont(ofSize: 18)
-        escalatedCountLabel.text = "Escalated Requests (\(viewModel.escalatedRequests.count))"
+        escalatedCountLabel.text =
+        "Escalated Requests (\(viewModel.escalatedRequests.count))"
 
         let viewAll = UIButton(type: .system)
         viewAll.setTitle("View All", for: .normal)
-        viewAll.addTarget(self,
-                          action: #selector(viewAllTapped),
-                          for: .touchUpInside)
+        viewAll.addTarget(
+            self,
+            action: #selector(viewAllTapped),
+            for: .touchUpInside
+        )
 
         let stack = UIStackView(arrangedSubviews: [
             escalatedCountLabel,
@@ -143,7 +157,6 @@ final class AdminDashboardViewController: UIViewController {
 
     private func rebuildEscalatedCards() {
 
-        // 🔥 Update count label EVERY time
         escalatedCountLabel.text =
         "Escalated Requests (\(viewModel.escalatedRequests.count))"
 
@@ -157,6 +170,18 @@ final class AdminDashboardViewController: UIViewController {
             }
             cardsStack.addArrangedSubview(card)
         }
+    }
+
+    // MARK: - Actions
+
+    @objc private func viewAllTapped() {
+        let vc = EscalatedRequestsViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func viewTechnicianMetricsTapped() {
+        let vc = TechnicianMetricsViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     // MARK: - Helpers
@@ -177,10 +202,5 @@ final class AdminDashboardViewController: UIViewController {
         b.layer.cornerRadius = 14
         b.heightAnchor.constraint(equalToConstant: 52).isActive = true
         return b
-    }
-
-    @objc private func viewAllTapped() {
-        let vc = EscalatedRequestsViewController()
-        navigationController?.pushViewController(vc, animated: true)
     }
 }
