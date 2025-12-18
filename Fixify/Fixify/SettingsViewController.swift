@@ -55,6 +55,11 @@ final class SettingsViewController: UIViewController {
         setupAppearance()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(true)
+        setupAppearance()
+    }
+    
     // MARK: - Setup Methods
     
     private func setupAppearance() {
@@ -197,13 +202,17 @@ extension SettingsViewController: UITableViewDelegate {
         case .appVersion:
             print("App Version")
         case .faq:
-            print("Navigate to FAQ")
+            let faqVC = FAQViewController()
+            navigationController?.pushViewController(faqVC, animated: true)
         case .terms:
-            print("Navigate to Terms of Service")
+            let termsVC = Term_ServiceViewController()
+            navigationController?.pushViewController(termsVC, animated: true)
         case .contact:
-            print("Navigate to Contact Information")
+            let contactVC = ContactViewController()
+            navigationController?.pushViewController(contactVC, animated: true)
         case .privacyPolicy:
-            print("Navigate to Privacy Policy")
+            let privacyVC = PrivacyPolicyViewController()
+            navigationController?.pushViewController(privacyVC, animated: true)
         default:
             break
         }
