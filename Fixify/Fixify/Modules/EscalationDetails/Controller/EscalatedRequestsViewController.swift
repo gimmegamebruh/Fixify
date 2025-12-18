@@ -1,3 +1,8 @@
+//
+//  EscalatedRequestsViewController.swift
+//  Fixify
+//
+
 import UIKit
 
 final class EscalatedRequestsViewController: UIViewController {
@@ -19,14 +24,22 @@ final class EscalatedRequestsViewController: UIViewController {
 
         setupSegment()
         setupTable()
+    }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Always reload from source of truth
         viewModel.loadData()
-        displayed = viewModel.filtered(by: .all)
+        displayed = viewModel.filtered(by: currentFilter)
+        tableView.reloadData()
     }
 
     private func setupSegment() {
         segmentedControl.selectedSegmentIndex = 0
-        segmentedControl.addTarget(self, action: #selector(filterChanged), for: .valueChanged)
+        segmentedControl.addTarget(self,
+                                   action: #selector(filterChanged),
+                                   for: .valueChanged)
         navigationItem.titleView = segmentedControl
     }
 
@@ -57,6 +70,7 @@ final class EscalatedRequestsViewController: UIViewController {
 }
 
 // MARK: - UITableViewDataSource
+
 extension EscalatedRequestsViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView,
@@ -67,14 +81,14 @@ extension EscalatedRequestsViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView,
                    cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
-        let request = displayed[indexPath.row]
-
         let cell = tableView.dequeueReusableCell(
             withIdentifier: EscalatedRequestCell.identifier,
             for: indexPath
         ) as! EscalatedRequestCell
 
-        // ✅ FIXED CALL
+        let request = displayed[indexPath.row]
+
+        // ✅ This now works because ViewModel has type(for:)
         cell.configure(
             with: request,
             escalationType: currentFilter == .all
@@ -90,5 +104,3 @@ extension EscalatedRequestsViewController: UITableViewDataSource {
         return cell
     }
 }
-
-

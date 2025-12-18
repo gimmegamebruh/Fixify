@@ -1,19 +1,19 @@
-//
-//  AllRequestsViewModel.swift
-//  Fixify
-//
-//  Created by BP-36-201-02 on 13/12/2025.
-//
-
-
 import Foundation
 
-class AllRequestsViewModel {
+final class AllRequestsViewModel {
 
+    private let service: RequestServicing = LocalRequestService.shared
     private(set) var allRequests: [Request] = []
 
-    func loadDummyData() {
-        allRequests = DummyRequests.data
+    func load() {
+        service.fetchAll { [weak self] requests in
+            guard let self else { return }
+
+            // 🔥 EXCLUDE escalated requests
+            self.allRequests = requests.filter {
+                $0.status != .escalated
+            }
+        }
     }
 
     func filtered(_ filter: RequestFilter) -> [Request] {

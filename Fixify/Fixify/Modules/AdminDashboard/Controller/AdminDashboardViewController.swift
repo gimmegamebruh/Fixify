@@ -4,9 +4,12 @@ final class AdminDashboardViewController: UIViewController {
 
     private let viewModel = AdminDashboardViewModel()
 
-    // MARK: - Scroll
     private let scrollView = UIScrollView()
     private let contentView = UIView()
+
+    // 🔹 Keep references so we can update dynamically
+    private let cardsStack = UIStackView()
+    private let escalatedCountLabel = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,7 +21,14 @@ final class AdminDashboardViewController: UIViewController {
         setupUI()
     }
 
-    // MARK: - Scroll Setup
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        viewModel.reload()
+        rebuildEscalatedCards()
+    }
+
+    // MARK: - Scroll
 
     private func setupScroll() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -78,22 +88,10 @@ final class AdminDashboardViewController: UIViewController {
         let inventory = primaryButton("Manage Inventory")
         let metrics = primaryButton("View Technician Metrics")
 
-        let header = sectionHeader(
-            "Escalated Requests (\(viewModel.escalatedRequests.count))"
-        )
+        let header = escalatedSectionHeader()
 
-        let cardsStack = UIStackView()
         cardsStack.axis = .vertical
         cardsStack.spacing = 12
-
-        viewModel.escalatedRequests.forEach { request in
-            let card = EscalatedRequestCard(request: request)
-            card.onViewTap = { [weak self] in
-                let vc = EscalationDetailViewController(request: request)
-                self?.navigationController?.pushViewController(vc, animated: true)
-            }
-            cardsStack.addArrangedSubview(card)
-        }
 
         let mainStack = UIStackView(arrangedSubviews: [
             statsGrid,
@@ -116,6 +114,49 @@ final class AdminDashboardViewController: UIViewController {
             mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24)
         ])
+
+        rebuildEscalatedCards()
+    }
+
+    // MARK: - Escalated Section
+
+    private func escalatedSectionHeader() -> UIView {
+
+        escalatedCountLabel.font = .boldSystemFont(ofSize: 18)
+        escalatedCountLabel.text = "Escalated Requests (\(viewModel.escalatedRequests.count))"
+
+        let viewAll = UIButton(type: .system)
+        viewAll.setTitle("View All", for: .normal)
+        viewAll.addTarget(self,
+                          action: #selector(viewAllTapped),
+                          for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [
+            escalatedCountLabel,
+            UIView(),
+            viewAll
+        ])
+        stack.axis = .horizontal
+
+        return stack
+    }
+
+    private func rebuildEscalatedCards() {
+
+        // 🔥 Update count label EVERY time
+        escalatedCountLabel.text =
+        "Escalated Requests (\(viewModel.escalatedRequests.count))"
+
+        cardsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        viewModel.escalatedRequests.forEach { request in
+            let card = EscalatedRequestCard(request: request)
+            card.onViewTap = { [weak self] in
+                let vc = EscalationDetailViewController(request: request)
+                self?.navigationController?.pushViewController(vc, animated: true)
+            }
+            cardsStack.addArrangedSubview(card)
+        }
     }
 
     // MARK: - Helpers
@@ -136,20 +177,6 @@ final class AdminDashboardViewController: UIViewController {
         b.layer.cornerRadius = 14
         b.heightAnchor.constraint(equalToConstant: 52).isActive = true
         return b
-    }
-
-    private func sectionHeader(_ title: String) -> UIView {
-        let label = UILabel()
-        label.text = title
-        label.font = .boldSystemFont(ofSize: 18)
-
-        let viewAll = UIButton(type: .system)
-        viewAll.setTitle("View All", for: .normal)
-        viewAll.addTarget(self, action: #selector(viewAllTapped), for: .touchUpInside)
-
-        let stack = UIStackView(arrangedSubviews: [label, UIView(), viewAll])
-        stack.axis = .horizontal
-        return stack
     }
 
     @objc private func viewAllTapped() {

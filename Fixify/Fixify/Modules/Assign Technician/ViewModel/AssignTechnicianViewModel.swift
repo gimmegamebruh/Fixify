@@ -21,13 +21,10 @@ final class AssignTechnicianViewModel {
         self.requestService = requestService
     }
 
-    // MARK: - Load (🔥 THIS IS WHAT WAS MISSING)
+    // MARK: - Load
     func load() {
         technicianService.fetchAll { [weak self] techs in
-            guard let self else { return }
-            self.technicians = techs.sorted {
-                $0.activeJobs < $1.activeJobs
-            }
+            self?.technicians = techs
         }
     }
 
@@ -36,8 +33,9 @@ final class AssignTechnicianViewModel {
         technicians[index]
     }
 
+    // 🔥 IMPORTANT: No more "busy" logic
     func isBusy(_ technician: Technician) -> Bool {
-        technician.activeJobs > 0
+        return false
     }
 
     // MARK: - Assign
@@ -45,19 +43,10 @@ final class AssignTechnicianViewModel {
         _ technician: Technician,
         completion: @escaping (Bool) -> Void
     ) {
-        guard !isBusy(technician) else {
-            completion(false)
-            return
-        }
-
         requestService.assignTechnician(
             requestID: requestID,
-            technicianID: technician.id
-        ) { success in
-            if success {
-                LocalTechnicianService.shared.incrementJobs(for: technician.id)
-            }
-            completion(success)
-        }
+            technicianID: technician.id,
+            completion: completion
+        )
     }
 }

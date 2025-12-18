@@ -1,10 +1,9 @@
 import Foundation
 
-
 final class AdminDashboardViewModel {
 
     private let service = LocalRequestService.shared
-    private var requests: [Request] = []
+    private(set) var requests: [Request] = []
 
     init() {
         reload()
@@ -45,7 +44,6 @@ final class AdminDashboardViewModel {
         guard !days.isEmpty else { return "0d" }
         return "\(days.reduce(0, +) / days.count)d"
     }
-
 
     var escalatedRequests: [Request] {
         requests.filter { $0.status == .escalated }

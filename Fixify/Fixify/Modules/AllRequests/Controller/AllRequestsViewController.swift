@@ -2,13 +2,10 @@
 //  AllRequestsViewController.swift
 //  Fixify
 //
-//  Created by BP-36-201-02 on 13/12/2025.
-//
-
 
 import UIKit
 
-class AllRequestsViewController: UIViewController, UITableViewDataSource {
+final class AllRequestsViewController: UIViewController {
 
     private let viewModel = AllRequestsViewModel()
     private var displayedRequests: [Request] = []
@@ -25,45 +22,87 @@ class AllRequestsViewController: UIViewController, UITableViewDataSource {
 
         setupFilterButton()
         setupTableView()
+    }
 
-        viewModel.loadDummyData()
+    // Reload every time we come back
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        viewModel.load()
         displayedRequests = viewModel.allRequests
         tableView.reloadData()
     }
 
+
     private func setupFilterButton() {
-        filterButton.setImage(UIImage(systemName: "line.3.horizontal.decrease"), for: .normal)
+        filterButton.setImage(
+            UIImage(systemName: "line.3.horizontal.decrease"),
+            for: .normal
+        )
         filterButton.addTarget(self, action: #selector(toggleDropdown), for: .touchUpInside)
+
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: filterButton)
     }
 
     @objc private func toggleDropdown() {
-        if let d = dropdown {
-            d.removeFromSuperview()
-            dropdown = nil
+        if let dropdown {
+            dropdown.removeFromSuperview()
+            self.dropdown = nil
             return
         }
 
-        let d = FilterDropdownView(frame: CGRect(x: 16, y: 100, width: 180, height: 170))
-        d.onSelectFilter = { [weak self] filter in
-            guard let self = self else { return }
+        let dropdown = FilterDropdownView()
+        dropdown.translatesAutoresizingMaskIntoConstraints = false
+
+        dropdown.onSelectFilter = { [weak self] filter in
+            guard let self else { return }
             self.displayedRequests = self.viewModel.filtered(filter)
             self.tableView.reloadData()
-            d.removeFromSuperview()
+            dropdown.removeFromSuperview()
             self.dropdown = nil
         }
 
-        dropdown = d
-        view.addSubview(d)
+        view.addSubview(dropdown)
+        self.dropdown = dropdown
+
+        NSLayoutConstraint.activate([
+            dropdown.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            dropdown.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            dropdown.widthAnchor.constraint(equalToConstant: 180)
+        ])
     }
+
+    private func setupTableView() {
+        tableView.register(RequestCell.self, forCellReuseIdentifier: RequestCell.identifier)
+        tableView.dataSource = self
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .clear
+
+        view.addSubview(tableView)
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+}
+
+// MARK: - UITableViewDataSource
+
+extension AllRequestsViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         displayedRequests.count
     }
 
-    func tableView(_ tableView: UITableView,
-                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCell(
             withIdentifier: RequestCell.identifier,
             for: indexPath
@@ -73,17 +112,18 @@ class AllRequestsViewController: UIViewController, UITableViewDataSource {
         cell.configure(with: request)
 
         cell.onAssignTap = { [weak self] in
+            guard let self else { return }
+
+            // 🔒 BUSINESS RULE (LOGIC ONLY — NO UI CHANGE)
+            guard request.status == .pending || request.status == .escalated else {
+                return
+            }
+
             let vc = AssignTechnicianViewController(requestID: request.id)
-            self?.navigationController?.pushViewController(vc, animated: true)
+            self.navigationController?.pushViewController(vc, animated: true)
         }
 
         return cell
     }
-
-    private func setupTableView() {
-        tableView.register(RequestCell.self, forCellReuseIdentifier: RequestCell.identifier)
-        tableView.dataSource = self
-        view.addSubview(tableView)
-        tableView.frame = view.bounds
-    }
 }
+

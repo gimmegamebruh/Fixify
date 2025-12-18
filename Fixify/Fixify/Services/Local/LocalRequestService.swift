@@ -21,8 +21,29 @@ final class LocalRequestService: RequestServicing {
             return
         }
 
+        let currentRequest = storage[index]
+
+        // ✅ Only pending / escalated can be assigned or reassigned
+        guard currentRequest.status == .pending || currentRequest.status == .escalated else {
+            completion(false)
+            return
+        }
+
+        let oldTechnicianID = currentRequest.assignedTechnicianID
+
+        // 🔁 Reassignment logic
+        if let oldID = oldTechnicianID, oldID != technicianID {
+            LocalTechnicianService.shared.decrementJobs(for: oldID)
+        }
+
+        // 🔺 Increment new technician
+        if oldTechnicianID != technicianID {
+            LocalTechnicianService.shared.incrementJobs(for: technicianID)
+        }
+
+        // ✅ Actually transfer the request
         storage[index].assignedTechnicianID = technicianID
-        storage[index].status = .inProgress
+
         completion(true)
     }
 

@@ -3,7 +3,6 @@ import Foundation
 final class LocalTechnicianService: TechnicianServicing {
 
     static let shared = LocalTechnicianService()
-
     private init() {
         technicians = DummyTechnicians.data
     }
@@ -18,6 +17,7 @@ final class LocalTechnicianService: TechnicianServicing {
 
     // MARK: - Job Management
 
+    /// Called when ADMIN assigns a request
     func incrementJobs(for technicianID: String) {
         guard let index = technicians.firstIndex(where: { $0.id == technicianID }) else {
             return
@@ -25,6 +25,7 @@ final class LocalTechnicianService: TechnicianServicing {
         technicians[index].activeJobs += 1
     }
 
+    /// Called later when TECHNICIAN completes a request
     func decrementJobs(for technicianID: String) {
         guard let index = technicians.firstIndex(where: { $0.id == technicianID }) else {
             return

@@ -49,10 +49,14 @@ final class TechnicianCell: UITableViewCell {
 
     func configure(with technician: Technician, isBusy: Bool) {
         nameLabel.text = technician.name
+
+        // 🔹 activeJobs = IN-PROGRESS only
         jobsLabel.text = "Active jobs: \(technician.activeJobs)"
 
-        assignButton.isEnabled = !isBusy
-        assignButton.alpha = isBusy ? 0.5 : 1
+        // 🔥 Assign is ALWAYS allowed now
+        assignButton.isEnabled = true
+        assignButton.alpha = 1
+        assignButton.backgroundColor = .systemBlue
     }
 
     @objc private func assignTapped() {
