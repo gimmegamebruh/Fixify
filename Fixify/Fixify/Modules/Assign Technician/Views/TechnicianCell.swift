@@ -1,3 +1,8 @@
+//
+//  TechnicianCell.swift
+//  Fixify
+//
+
 import UIKit
 
 final class TechnicianCell: UITableViewCell {
@@ -23,8 +28,6 @@ final class TechnicianCell: UITableViewCell {
         backgroundColor = .clear
 
         assignButton.setTitle("Assign", for: .normal)
-        assignButton.backgroundColor = .systemBlue
-        assignButton.setTitleColor(.white, for: .normal)
         assignButton.layer.cornerRadius = 10
         assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
 
@@ -47,16 +50,28 @@ final class TechnicianCell: UITableViewCell {
         ])
     }
 
-    func configure(with technician: Technician, isBusy: Bool) {
+    func configure(
+        with technician: Technician,
+        isBusy: Bool,
+        isCurrentlyAssigned: Bool
+    ) {
         nameLabel.text = technician.name
-
-        // 🔹 activeJobs = IN-PROGRESS only
         jobsLabel.text = "Active jobs: \(technician.activeJobs)"
 
-        // 🔥 Assign is ALWAYS allowed now
-        assignButton.isEnabled = true
-        assignButton.alpha = 1
-        assignButton.backgroundColor = .systemBlue
+        if isCurrentlyAssigned {
+            // 🔵 CURRENTLY ASSIGNED TECH
+            assignButton.setTitle("Assigned", for: .normal)
+            assignButton.backgroundColor = .systemBlue.withAlphaComponent(0.3)
+            assignButton.setTitleColor(.systemBlue, for: .normal)
+            assignButton.isEnabled = false
+
+        } else {
+            // ✅ AVAILABLE FOR ASSIGNMENT
+            assignButton.setTitle("Assign", for: .normal)
+            assignButton.backgroundColor = .systemBlue
+            assignButton.setTitleColor(.white, for: .normal)
+            assignButton.isEnabled = true
+        }
     }
 
     @objc private func assignTapped() {

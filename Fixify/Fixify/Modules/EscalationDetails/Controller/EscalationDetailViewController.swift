@@ -15,9 +15,6 @@ final class EscalationDetailViewController: UIViewController {
     private let priorityOptions = ["Low", "Medium", "High"]
     private var selectedPriority: String?
 
-    // Technician selected but NOT committed until Update
-    private var pendingTechnician: Technician?
-
     // MARK: - UI (UNCHANGED)
     private let infoCard = UIView()
     private let infoLabel = UILabel()
@@ -41,6 +38,19 @@ final class EscalationDetailViewController: UIViewController {
         view.backgroundColor = .systemGroupedBackground
         setupUI()
         refreshInfo()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // 🔄 Refresh request after reassignment
+        requestService.fetchAll { [weak self] requests in
+            guard let self else { return }
+            if let updated = requests.first(where: { $0.id == self.request.id }) {
+                self.request = updated
+                self.refreshInfo()
+            }
+        }
     }
 
     // MARK: - UI Setup (UNCHANGED)
@@ -110,10 +120,7 @@ final class EscalationDetailViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func reassignTapped() {
-        let vc = AssignTechnicianViewController { [weak self] technician in
-            self?.pendingTechnician = technician
-            self?.refreshInfo()
-        }
+        let vc = AssignTechnicianViewController(requestID: request.id)
         navigationController?.pushViewController(vc, animated: true)
     }
 
@@ -124,21 +131,12 @@ final class EscalationDetailViewController: UIViewController {
             return
         }
 
-        // 🔥 1. Update priority + resolve escalation
         var updated = request
         updated.priority = priority
         updated.status = .pending
 
         requestService.updateRequest(updated)
         request = updated
-
-        // 🔥 2. Assign / reassign THROUGH SERVICE (counts fixed)
-        if let technician = pendingTechnician {
-            requestService.assignTechnician(
-                requestID: request.id,
-                technicianID: technician.id
-            ) { _ in }
-        }
 
         let alert = UIAlertController(
             title: nil,
@@ -158,7 +156,7 @@ final class EscalationDetailViewController: UIViewController {
     // MARK: - Helpers
 
     private func refreshInfo() {
-        let technicianName = pendingTechnician?.name ?? request.assignedTechnicianID ?? "Unassigned"
+        let technicianName = request.assignedTechnicianID ?? "Unassigned"
 
         infoLabel.text = """
         \(request.title) – \(request.location)

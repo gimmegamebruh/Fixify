@@ -1,16 +1,19 @@
+//
+//  AssignTechnicianViewModel.swift
+//  Fixify
+//
+
 import Foundation
 
 final class AssignTechnicianViewModel {
 
-    // MARK: - Dependencies
     private let technicianService: TechnicianServicing
     private let requestService: RequestServicing
 
-    // MARK: - State
     private(set) var technicians: [Technician] = []
     private let requestID: String
+    private var currentRequest: Request?
 
-    // MARK: - Init
     init(
         requestID: String,
         technicianService: TechnicianServicing = LocalTechnicianService.shared,
@@ -21,32 +24,42 @@ final class AssignTechnicianViewModel {
         self.requestService = requestService
     }
 
-    // MARK: - Load
     func load() {
         technicianService.fetchAll { [weak self] techs in
             self?.technicians = techs
         }
+
+        requestService.fetchAll { [weak self] requests in
+            self?.currentRequest = requests.first { $0.id == self?.requestID }
+        }
     }
 
-    // MARK: - Access
     func technician(at index: Int) -> Technician {
         technicians[index]
     }
 
-    // 🔥 IMPORTANT: No more "busy" logic
     func isBusy(_ technician: Technician) -> Bool {
-        return false
+        false // 🔓 multiple assignments allowed
     }
 
-    // MARK: - Assign
+    func isCurrentlyAssigned(_ technician: Technician) -> Bool {
+        currentRequest?.assignedTechnicianID == technician.id
+    }
+
     func assignTechnician(
         _ technician: Technician,
         completion: @escaping (Bool) -> Void
     ) {
+        guard !isCurrentlyAssigned(technician) else {
+            completion(false)
+            return
+        }
+
         requestService.assignTechnician(
             requestID: requestID,
-            technicianID: technician.id,
-            completion: completion
-        )
+            technicianID: technician.id
+        ) { success in
+            completion(success)
+        }
     }
 }
