@@ -3,6 +3,7 @@ import UIKit
 final class SettingsViewController: UIViewController {
 
     private enum Section: Int, CaseIterable {
+        case account
         case general
         case support
         case preference
@@ -10,6 +11,7 @@ final class SettingsViewController: UIViewController {
 
         var title: String {
             switch self {
+            case .account: return "Account"
             case .general: return "General"
             case .support: return "Support & About"
             case .preference: return "App Preference"
@@ -19,6 +21,9 @@ final class SettingsViewController: UIViewController {
     }
 
     private enum Row {
+        case viewProfile
+        case editProfile
+        case logout
         case appVersion
         case faq
         case terms
@@ -28,6 +33,9 @@ final class SettingsViewController: UIViewController {
 
         var title: String {
             switch self {
+            case .viewProfile: return "View Full Profile"
+            case .editProfile: return "Edit Profile"
+            case .logout: return "Logout"
             case .appVersion: return "App Version"
             case .faq: return "FAQ"
             case .terms: return "Terms of Service"
@@ -39,8 +47,45 @@ final class SettingsViewController: UIViewController {
     }
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    
+    // Profile Header Container
+    private let profileHeaderContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = .clear
+        return view
+    }()
+    
+    private let profileImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 40
+        imageView.backgroundColor = .systemGray5
+        imageView.image = UIImage(systemName: "person.circle.fill")
+        imageView.tintColor = .systemGray3
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
+    private let nameLabel: UILabel = {
+        let label = UILabel()
+        label.text = "John Doe"
+        label.font = UIFont.systemFont(ofSize: 22, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let emailLabel: UILabel = {
+        let label = UILabel()
+        label.text = "john.doe@student.com"
+        label.font = UIFont.systemFont(ofSize: 15, weight: .regular)
+        label.textColor = .systemGray
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
 
     private let sections: [[Row]] = [
+        [.viewProfile,.editProfile,.logout],
         [.appVersion],
         [.faq, .terms, .contact],
         [.darkMode],
@@ -52,6 +97,7 @@ final class SettingsViewController: UIViewController {
         self.navigationItem.title = "Settings"
         view.backgroundColor = .systemBackground
         setupTableView()
+        setupProfileHeader()
         setupAppearance()
     }
     
@@ -61,6 +107,37 @@ final class SettingsViewController: UIViewController {
     }
     
     // MARK: - Setup Methods
+    
+    private func setupProfileHeader() {
+        // Set the frame for the header container
+        profileHeaderContainer.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
+        
+        profileHeaderContainer.addSubview(profileImageView)
+        profileHeaderContainer.addSubview(nameLabel)
+        profileHeaderContainer.addSubview(emailLabel)
+        
+        NSLayoutConstraint.activate([
+            profileImageView.leadingAnchor.constraint(equalTo: profileHeaderContainer.leadingAnchor, constant: 20),
+            profileImageView.centerYAnchor.constraint(equalTo: profileHeaderContainer.centerYAnchor),
+            profileImageView.widthAnchor.constraint(equalToConstant: 80),
+            profileImageView.heightAnchor.constraint(equalToConstant: 80),
+            
+            nameLabel.leadingAnchor.constraint(equalTo: profileImageView.trailingAnchor, constant: 16),
+            nameLabel.trailingAnchor.constraint(equalTo: profileHeaderContainer.trailingAnchor, constant: -20),
+            nameLabel.topAnchor.constraint(equalTo: profileImageView.topAnchor, constant: 12),
+            
+            emailLabel.leadingAnchor.constraint(equalTo: nameLabel.leadingAnchor),
+            emailLabel.trailingAnchor.constraint(equalTo: nameLabel.trailingAnchor),
+            emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4)
+        ])
+        
+        // Set the header view
+        tableView.tableHeaderView = profileHeaderContainer
+        
+        // Apply dynamic colors to labels
+        nameLabel.textColor = dynamicTextColor()
+        emailLabel.textColor = UIColor.systemGray
+    }
     
     private func setupAppearance() {
         guard let navigationController = self.navigationController else { return }
@@ -79,10 +156,10 @@ final class SettingsViewController: UIViewController {
         
         navigationController.navigationBar.standardAppearance = appearance
         navigationController.navigationBar.scrollEdgeAppearance = appearance
-        navigationController.navigationBar.tintColor = .systemGroupedBackground // Button color
+        navigationController.navigationBar.tintColor = .label
         
         // Update view background to match
-        view.backgroundColor = .label
+        view.backgroundColor = .systemGroupedBackground
     }
     
     private func setupTableView() {
@@ -98,6 +175,14 @@ final class SettingsViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+    
+    // MARK: - Dynamic Colors
+    
+    private func dynamicTextColor() -> UIColor {
+        return UIColor { (traitCollection: UITraitCollection) -> UIColor in
+            return traitCollection.userInterfaceStyle == .dark ? .white : .black
+        }
     }
 
     // MARK: - Actions
@@ -115,8 +200,8 @@ final class SettingsViewController: UIViewController {
         // Refresh the navigation bar appearance after the style change
         setupAppearance()
         
-        // Update switch colors
-        sender.onTintColor = .systemGreen
+        // Update switch colors based on dark mode state
+        sender.onTintColor = sender.isOn ? .black : .systemGreen
         sender.thumbTintColor = .white
         
         // Save the preference
@@ -173,7 +258,7 @@ extension SettingsViewController: UITableViewDataSource {
             let savedDarkMode = UserDefaults.standard.bool(forKey: "isDarkModeEnabled")
             toggle.isOn = savedDarkMode
             
-            toggle.onTintColor = .systemGreen
+            toggle.onTintColor = savedDarkMode ? .black : .systemGreen
             toggle.thumbTintColor = .white
             
             toggle.addTarget(self, action: #selector(darkModeChanged(_:)), for: .valueChanged)
@@ -198,7 +283,14 @@ extension SettingsViewController: UITableViewDelegate {
         let row = sections[indexPath.section][indexPath.row]
 
         switch row {
-        
+        case .viewProfile:
+            let profileVC = ProfileViewController()
+                navigationController?.pushViewController(profileVC, animated: true)
+        case .editProfile:
+            let editProfileVC = EditProfileViewController()
+                navigationController?.pushViewController(editProfileVC, animated: true)
+        case .logout:
+            print("Logout")
         case .appVersion:
             print("App Version")
         case .faq:
