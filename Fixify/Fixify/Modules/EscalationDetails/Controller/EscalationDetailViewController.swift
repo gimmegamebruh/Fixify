@@ -1,21 +1,17 @@
-//
-//  EscalationDetailViewController.swift
-//  Fixify
-//
-
 import UIKit
 
 final class EscalationDetailViewController: UIViewController {
 
     // MARK: - Dependencies
     private let requestService: RequestServicing = LocalRequestService.shared
+    private let technicianService = LocalTechnicianService.shared
 
     // MARK: - State
     private var request: Request
     private let priorityOptions = ["Low", "Medium", "High"]
     private var selectedPriority: String?
 
-    // MARK: - UI (UNCHANGED)
+    // MARK: - UI
     private let infoCard = UIView()
     private let infoLabel = UILabel()
     private let statusLabel = UILabel()
@@ -43,7 +39,6 @@ final class EscalationDetailViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        // 🔄 Refresh request after reassignment
         requestService.fetchAll { [weak self] requests in
             guard let self else { return }
             if let updated = requests.first(where: { $0.id == self.request.id }) {
@@ -53,7 +48,7 @@ final class EscalationDetailViewController: UIViewController {
         }
     }
 
-    // MARK: - UI Setup (UNCHANGED)
+    // MARK: - UI Setup
     private func setupUI() {
 
         infoCard.backgroundColor = .white
@@ -126,8 +121,14 @@ final class EscalationDetailViewController: UIViewController {
 
     @objc private func updateTapped() {
 
+        // ❌ Priority not selected
         guard let priority = selectedPriority else {
-            showAlert("Please select priority")
+            showAlert("Please select a priority before updating the request.")
+            return
+        }
+
+        guard request.assignedTechnicianID != nil else {
+            showAlert("Please assign a technician before updating the request.")
             return
         }
 
@@ -139,7 +140,7 @@ final class EscalationDetailViewController: UIViewController {
         request = updated
 
         let alert = UIAlertController(
-            title: nil,
+            title: "Updated",
             message: "Request updated successfully ✅",
             preferredStyle: .alert
         )
@@ -153,16 +154,26 @@ final class EscalationDetailViewController: UIViewController {
         present(alert, animated: true)
     }
 
+
     // MARK: - Helpers
 
     private func refreshInfo() {
-        let technicianName = request.assignedTechnicianID ?? "Unassigned"
+
+        let technicianName: String
+
+        if let techID = request.assignedTechnicianID,
+           let name = technicianService.name(for: techID) {
+            technicianName = name
+        } else {
+            technicianName = "Unassigned"
+        }
 
         infoLabel.text = """
         \(request.title) – \(request.location)
         Technician: \(technicianName)
         """
-        statusLabel.text = "Escalated"
+
+        statusLabel.text = request.status == .escalated ? "Escalated" : request.status.rawValue
     }
 
     private func makePicker() -> UIPickerView {

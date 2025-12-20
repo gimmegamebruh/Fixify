@@ -32,4 +32,9 @@ final class LocalTechnicianService: TechnicianServicing {
         }
         technicians[index].activeJobs = max(0, technicians[index].activeJobs - 1)
     }
+    
+    func name(for technicianID: String) -> String? {
+        technicians.first(where: { $0.id == technicianID })?.name
+    }
+
 }
