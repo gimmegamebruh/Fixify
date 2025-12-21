@@ -14,7 +14,7 @@ final class RequestService {
             .addSnapshotListener { snapshot, _ in
 
                 guard let docs = snapshot?.documents else {
-                    completion([])
+                    completion([]) 
                     return
                 }
 
