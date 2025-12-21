@@ -1,16 +1,31 @@
 import Foundation
 
 struct Request: Identifiable, Codable {
+
     let id: String
-    let title: String
-    let location: String
-    let category: String
+
+    // Core info (student creates these)
+    var title: String
     var description: String
-    var priority: String
+    var location: String
+    var category: String
+
+    // Status & priority (admin controls)
+    var priority: RequestPriority
     var status: RequestStatus
-    let dateCreated: Date
+
+    // Ownership
     let createdBy: String
-    let imageName: String?
     var assignedTechnicianID: String?
-    let completedDate: Date?
+
+    // Timing
+    let dateCreated: Date
+    var scheduledTime: Date?
+
+    // Feedback (optional, student side)
+    var rating: Int?
+    var ratingComment: String?
+
+    // Media (Firebase-friendly)
+    var imageURL: String?
 }

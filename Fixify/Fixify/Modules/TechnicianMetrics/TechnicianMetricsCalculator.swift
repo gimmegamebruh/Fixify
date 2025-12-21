@@ -19,31 +19,36 @@ final class TechnicianMetricsCalculator {
     ) {
         requestService.fetchAll { requests in
 
-            let assigned = requests.filter {
+            let assignedRequests = requests.filter {
                 $0.assignedTechnicianID == technicianID
             }
 
-            let completed = assigned.filter { $0.status == .completed }
-            let pending = assigned.filter { $0.status == .pending }
-
-            let completionDays: [Int] = completed.compactMap {
-                guard let completedDate = $0.completedDate else { return nil }
-                return Calendar.current.dateComponents(
-                    [.day],
-                    from: $0.dateCreated,
-                    to: completedDate
-                ).day
+            let completedRequests = assignedRequests.filter {
+                $0.status == .completed
             }
 
-            let avgTime = completionDays.isEmpty
+            let pendingRequests = assignedRequests.filter {
+                $0.status == .pending || $0.status == .active
+            }
+
+            // ⏱ Estimate completion time using creation date
+            let completionDays: [Int] = completedRequests.map {
+                Calendar.current.dateComponents(
+                    [.day],
+                    from: $0.dateCreated,
+                    to: Date()
+                ).day ?? 0
+            }
+
+            let averageCompletionTime = completionDays.isEmpty
                 ? 0
                 : completionDays.reduce(0, +) / completionDays.count
 
             let metrics = TechnicianMetrics(
-                totalJobsCompleted: completed.count,
-                pendingJobs: pending.count,
-                averageCompletionTime: Double(avgTime),
-                customerRating: 0,   // comes later from reviews
+                totalJobsCompleted: completedRequests.count,
+                pendingJobs: pendingRequests.count,
+                averageCompletionTime: Double(averageCompletionTime),
+                customerRating: 0,   // hooked later to reviews
                 totalReviews: 0
             )
 

@@ -8,8 +8,8 @@ final class EscalationDetailViewController: UIViewController {
 
     // MARK: - State
     private var request: Request
-    private let priorityOptions = ["Low", "Medium", "High"]
-    private var selectedPriority: String?
+    private let priorityOptions: [RequestPriority] = [.low, .medium, .high, .urgent]
+    private var selectedPriority: RequestPriority?
 
     // MARK: - UI
     private let infoCard = UIView()
@@ -26,7 +26,9 @@ final class EscalationDetailViewController: UIViewController {
         title = "Escalation Details"
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) not implemented")
+    }
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -121,7 +123,6 @@ final class EscalationDetailViewController: UIViewController {
 
     @objc private func updateTapped() {
 
-        // ❌ Priority not selected
         guard let priority = selectedPriority else {
             showAlert("Please select a priority before updating the request.")
             return
@@ -154,7 +155,6 @@ final class EscalationDetailViewController: UIViewController {
         present(alert, animated: true)
     }
 
-
     // MARK: - Helpers
 
     private func refreshInfo() {
@@ -173,7 +173,9 @@ final class EscalationDetailViewController: UIViewController {
         Technician: \(technicianName)
         """
 
-        statusLabel.text = request.status == .escalated ? "Escalated" : request.status.rawValue
+        statusLabel.text = request.status == .escalated
+            ? "ESCALATED"
+            : request.status.rawValue.uppercased()
     }
 
     private func makePicker() -> UIPickerView {
@@ -203,13 +205,14 @@ extension EscalationDetailViewController: UIPickerViewDataSource, UIPickerViewDe
     func pickerView(_ pickerView: UIPickerView,
                     titleForRow row: Int,
                     forComponent component: Int) -> String? {
-        priorityOptions[row]
+        priorityOptions[row].rawValue.capitalized
     }
 
     func pickerView(_ pickerView: UIPickerView,
                     didSelectRow row: Int,
                     inComponent component: Int) {
-        selectedPriority = priorityOptions[row]
-        priorityField.text = priorityOptions[row]
+        let priority = priorityOptions[row]
+        selectedPriority = priority
+        priorityField.text = priority.rawValue.capitalized
     }
 }

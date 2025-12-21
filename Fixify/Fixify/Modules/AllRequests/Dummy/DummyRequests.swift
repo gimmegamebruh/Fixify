@@ -7,61 +7,69 @@ struct DummyRequests {
         Request(
             id: UUID().uuidString,
             title: "Projector Issue",
+            description: "Projector not turning on during lectures",
             location: "Room 101",
             category: "Electrical",
-            description: "Projector not working",
-            priority: "Medium",
+            priority: .medium,
             status: .completed,
-            dateCreated: Calendar.current.date(byAdding: .day, value: -6, to: Date())!,
             createdBy: "student1",
-            imageName: nil,
             assignedTechnicianID: "T1",
-            completedDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())
+            dateCreated: Calendar.current.date(byAdding: .day, value: -6, to: Date())!,
+            scheduledTime: nil,
+            rating: 4,
+            ratingComment: "Fixed quickly",
+            imageURL: nil
         ),
 
         Request(
             id: UUID().uuidString,
             title: "Broken Chair",
+            description: "Chair leg is broken and unsafe",
             location: "Class 204",
             category: "Furniture",
-            description: "Chair broken",
-            priority: "Low",
+            priority: .low,
             status: .pending,
-            dateCreated: Date(),
             createdBy: "student2",
-            imageName: nil,
             assignedTechnicianID: nil,
-            completedDate: nil
+            dateCreated: Date(),
+            scheduledTime: nil,
+            rating: nil,
+            ratingComment: nil,
+            imageURL: nil
         ),
 
         Request(
             id: UUID().uuidString,
             title: "AC Maintenance",
+            description: "AC not cooling properly",
             location: "Lab 304",
             category: "HVAC",
-            description: "AC not cooling",
-            priority: "High",
+            priority: .high,
             status: .escalated,
-            dateCreated: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
             createdBy: "student3",
-            imageName: nil,
             assignedTechnicianID: nil,
-            completedDate: nil
+            dateCreated: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+            scheduledTime: nil,
+            rating: nil,
+            ratingComment: nil,
+            imageURL: nil
         ),
 
         Request(
             id: UUID().uuidString,
             title: "Water Leakage",
+            description: "Water leaking from ceiling",
             location: "Building B",
             category: "Plumbing",
-            description: "Pipe leakage",
-            priority: "High",
+            priority: .urgent,
             status: .escalated,
-            dateCreated: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
             createdBy: "student4",
-            imageName: nil,
             assignedTechnicianID: nil,
-            completedDate: nil
+            dateCreated: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
+            scheduledTime: nil,
+            rating: nil,
+            ratingComment: nil,
+            imageURL: nil
         )
     ]
 }

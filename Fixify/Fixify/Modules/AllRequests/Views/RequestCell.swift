@@ -18,7 +18,11 @@ final class RequestCell: UITableViewCell {
         setupUI()
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - UI Setup
 
     private func setupUI() {
 
@@ -93,29 +97,37 @@ final class RequestCell: UITableViewCell {
         ])
     }
 
+    // MARK: - Configuration
+
     func configure(with request: Request) {
 
-        titleLabel.text = "Title: \(request.title)"
-        locationLabel.text = "Location: \(request.location)"
+        titleLabel.text = request.title
+        locationLabel.text = request.location
 
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        dateLabel.text = "Date: \(formatter.string(from: request.dateCreated))"
+        dateLabel.text = formatter.string(from: request.dateCreated)
 
         statusBadge.text = request.status.rawValue.uppercased()
 
         switch request.status {
         case .pending:
             statusBadge.backgroundColor = .systemYellow
+
+        case .active:
+            statusBadge.backgroundColor = .systemBlue
+
         case .escalated:
             statusBadge.backgroundColor = .systemOrange
-        case .inProgress:
-            statusBadge.backgroundColor = .systemPurple
+
         case .completed:
             statusBadge.backgroundColor = .systemGreen
+
+        case .cancelled:
+            statusBadge.backgroundColor = .systemRed
         }
 
-        // 🔥 CORE RULE ENFORCED HERE
+        // 🔒 Business rule: only pending / escalated can be assigned
         let canAssign = request.status == .pending || request.status == .escalated
 
         assignButton.isEnabled = canAssign

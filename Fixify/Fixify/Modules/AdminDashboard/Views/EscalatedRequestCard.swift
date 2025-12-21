@@ -19,6 +19,7 @@ final class EscalatedRequestCard: UIView {
         layer.shadowRadius = 6
         layer.shadowOffset = CGSize(width: 0, height: 3)
 
+        // Badge
         badge.font = .systemFont(ofSize: 12, weight: .semibold)
         badge.textColor = .white
         badge.textAlignment = .center
@@ -32,33 +33,38 @@ final class EscalatedRequestCard: UIView {
         ).day ?? 0
 
         if daysOld > 5 {
-            badge.text = "Overdue"
+            badge.text = "OVERDUE"
             badge.backgroundColor = .systemRed
-        } else if request.priority.lowercased() == "high" {
-            badge.text = "Urgent"
+
+        } else if request.priority == .high || request.priority == .urgent {
+            badge.text = "URGENT"
             badge.backgroundColor = .systemOrange
+
         } else {
             badge.isHidden = true
         }
 
+        // Labels
         titleLabel.text = request.title
         titleLabel.font = .boldSystemFont(ofSize: 16)
 
         subtitleLabel.text = request.location
         subtitleLabel.textColor = .darkGray
 
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        dateLabel.text = f.string(from: request.dateCreated)
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        dateLabel.text = formatter.string(from: request.dateCreated)
         dateLabel.textColor = .gray
         dateLabel.font = .systemFont(ofSize: 13)
 
+        // Button
         viewButton.setTitle("View", for: .normal)
         viewButton.setTitleColor(.white, for: .normal)
         viewButton.backgroundColor = .systemBlue
         viewButton.layer.cornerRadius = 10
         viewButton.addTarget(self, action: #selector(viewTapped), for: .touchUpInside)
 
+        // Layout
         let leftStack = UIStackView(arrangedSubviews: [
             titleLabel,
             subtitleLabel,
@@ -101,5 +107,7 @@ final class EscalatedRequestCard: UIView {
         onViewTap?()
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }
