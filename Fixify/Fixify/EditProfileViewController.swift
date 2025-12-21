@@ -64,25 +64,51 @@ final class EditProfileViewController: UIViewController {
         return textField
     }()
     
-    // Email Section
-    private let emailLabel: UILabel = {
+    // Address Section
+    private let addressLabel: UILabel = {
         let label = UILabel()
-        label.text = "Email:"
+        label.text = "Address (Street, Building, Block):"
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
-    private let emailTextField: UITextField = {
+    private let addressTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "123456@gmail.com"
-        textField.text = "123456@gmail.com"
+        textField.placeholder = "675, 7578, 602"
+        textField.text = "675, 7578, 602"
         textField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         textField.borderStyle = .none
         textField.backgroundColor = .white
         textField.layer.cornerRadius = 8
-        textField.keyboardType = .emailAddress
-        textField.autocapitalizationType = .none
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Add padding
+        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 40))
+        textField.leftView = paddingView
+        textField.leftViewMode = .always
+        
+        return textField
+    }()
+    
+    // Emergency Contact Section
+    private let emergencyLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Emergency Contact Number:"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let emergencyTextField: UITextField = {
+        let textField = UITextField()
+        textField.placeholder = "45368522"
+        textField.text = "45368522"
+        textField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+        textField.borderStyle = .none
+        textField.backgroundColor = .white
+        textField.layer.cornerRadius = 8
+        textField.keyboardType = .phonePad
         textField.translatesAutoresizingMaskIntoConstraints = false
         
         // Add padding
@@ -126,7 +152,7 @@ final class EditProfileViewController: UIViewController {
         
         // Custom centered title label
         let titleLabel = UILabel()
-        titleLabel.text = "Profile"
+        titleLabel.text = "Edit Profile"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
         titleLabel.textColor = dynamicTextColor()
         titleLabel.textAlignment = .center
@@ -153,8 +179,10 @@ final class EditProfileViewController: UIViewController {
         contentView.addSubview(profileImageView)
         contentView.addSubview(contactLabel)
         contentView.addSubview(contactTextField)
-        contentView.addSubview(emailLabel)
-        contentView.addSubview(emailTextField)
+        contentView.addSubview(addressLabel)
+        contentView.addSubview(addressTextField)
+        contentView.addSubview(emergencyLabel)
+        contentView.addSubview(emergencyTextField)
         contentView.addSubview(confirmButton)
         
         NSLayoutConstraint.activate([
@@ -190,19 +218,30 @@ final class EditProfileViewController: UIViewController {
             contactTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             contactTextField.heightAnchor.constraint(equalToConstant: 50),
             
-            // Email Label
-            emailLabel.topAnchor.constraint(equalTo: contactTextField.bottomAnchor, constant: 24),
-            emailLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            emailLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            // Address Label
+            addressLabel.topAnchor.constraint(equalTo: contactTextField.bottomAnchor, constant: 24),
+            addressLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            addressLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
-            // Email TextField
-            emailTextField.topAnchor.constraint(equalTo: emailLabel.bottomAnchor, constant: 12),
-            emailTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            emailTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            emailTextField.heightAnchor.constraint(equalToConstant: 50),
+            // Address TextField
+            addressTextField.topAnchor.constraint(equalTo: addressLabel.bottomAnchor, constant: 12),
+            addressTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            addressTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            addressTextField.heightAnchor.constraint(equalToConstant: 50),
+            
+            // Emergency Label
+            emergencyLabel.topAnchor.constraint(equalTo: addressTextField.bottomAnchor, constant: 24),
+            emergencyLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            emergencyLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Emergency TextField
+            emergencyTextField.topAnchor.constraint(equalTo: emergencyLabel.bottomAnchor, constant: 12),
+            emergencyTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            emergencyTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            emergencyTextField.heightAnchor.constraint(equalToConstant: 50),
             
             // Confirm Button
-            confirmButton.topAnchor.constraint(equalTo: emailTextField.bottomAnchor, constant: 60),
+            confirmButton.topAnchor.constraint(equalTo: emergencyTextField.bottomAnchor, constant: 60),
             confirmButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             confirmButton.widthAnchor.constraint(equalToConstant: 150),
             confirmButton.heightAnchor.constraint(equalToConstant: 44),
@@ -212,13 +251,16 @@ final class EditProfileViewController: UIViewController {
         // Apply dynamic colors
         profilePictureLabel.textColor = dynamicTextColor()
         contactLabel.textColor = dynamicTextColor()
-        emailLabel.textColor = dynamicTextColor()
+        addressLabel.textColor = dynamicTextColor()
+        emergencyLabel.textColor = dynamicTextColor()
         
         // Update text field colors for dark mode
         contactTextField.backgroundColor = dynamicTextFieldBackgroundColor()
         contactTextField.textColor = dynamicTextColor()
-        emailTextField.backgroundColor = dynamicTextFieldBackgroundColor()
-        emailTextField.textColor = dynamicTextColor()
+        addressTextField.backgroundColor = dynamicTextFieldBackgroundColor()
+        addressTextField.textColor = dynamicTextColor()
+        emergencyTextField.backgroundColor = dynamicTextFieldBackgroundColor()
+        emergencyTextField.textColor = dynamicTextColor()
     }
     
     private func setupActions() {
@@ -242,14 +284,20 @@ final class EditProfileViewController: UIViewController {
             return
         }
         
-        guard let email = emailTextField.text, !email.isEmpty else {
-            showAlert(message: "Please enter an email address")
+        guard let address = addressTextField.text, !address.isEmpty else {
+            showAlert(message: "Please enter an address")
+            return
+        }
+        
+        guard let emergency = emergencyTextField.text, !emergency.isEmpty else {
+            showAlert(message: "Please enter an emergency contact number")
             return
         }
         
         // Save the data (you can use UserDefaults, Core Data, or send to server)
         UserDefaults.standard.set(contact, forKey: "userContact")
-        UserDefaults.standard.set(email, forKey: "userEmail")
+        UserDefaults.standard.set(address, forKey: "userAddress")
+        UserDefaults.standard.set(emergency, forKey: "userEmergency")
         
         showAlert(message: "Profile updated successfully!") {
             self.navigationController?.popViewController(animated: true)

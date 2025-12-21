@@ -70,6 +70,24 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
+    private let addressLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Address (Street, Building, Block): 675, 7578, 602"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let EmergencyLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Emergency Contact Number: 45368522"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavigationBar()
@@ -104,6 +122,7 @@ final class ProfileViewController: UIViewController {
         
         view.backgroundColor = dynamicBackgroundColor()
     }
+    
     private func setupUI() {
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
@@ -116,6 +135,8 @@ final class ProfileViewController: UIViewController {
         infoCardView.addSubview(studentIdLabel)
         infoCardView.addSubview(emailLabel)
         infoCardView.addSubview(contactLabel)
+        infoCardView.addSubview(addressLabel)
+        infoCardView.addSubview(EmergencyLabel)
         
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -154,7 +175,15 @@ final class ProfileViewController: UIViewController {
             contactLabel.topAnchor.constraint(equalTo: emailLabel.bottomAnchor, constant: 16),
             contactLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 20),
             contactLabel.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -20),
-            contactLabel.bottomAnchor.constraint(equalTo: infoCardView.bottomAnchor, constant: -24)
+            
+            addressLabel.topAnchor.constraint(equalTo: contactLabel.bottomAnchor, constant: 16),
+            addressLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 20),
+            addressLabel.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -20),
+            
+            EmergencyLabel.topAnchor.constraint(equalTo: addressLabel.bottomAnchor, constant: 16),
+            EmergencyLabel.leadingAnchor.constraint(equalTo: infoCardView.leadingAnchor, constant: 20),
+            EmergencyLabel.trailingAnchor.constraint(equalTo: infoCardView.trailingAnchor, constant: -20),
+            EmergencyLabel.bottomAnchor.constraint(equalTo: infoCardView.bottomAnchor, constant: -24)
         ])
         
         // Apply dynamic colors
@@ -162,6 +191,8 @@ final class ProfileViewController: UIViewController {
         studentIdLabel.textColor = dynamicTextColor()
         emailLabel.textColor = dynamicTextColor()
         contactLabel.textColor = dynamicTextColor()
+        addressLabel.textColor = dynamicTextColor()
+        EmergencyLabel.textColor = dynamicTextColor()
         
         // Update card background for dark mode
         infoCardView.backgroundColor = dynamicCardBackgroundColor()
