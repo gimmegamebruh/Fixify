@@ -221,7 +221,7 @@ final class NewRequestViewController: UIViewController {
                 priority: priority,
                 status: .pending,
                 createdBy: currentStudentID,
-                assignedTo: nil,
+                assignedTechnicianID: nil,
                 dateCreated: Date(),
                 scheduledTime: nil,
                 imageURL: imageURL

@@ -8,7 +8,7 @@ final class TechnicianScheduleViewController: UITableViewController {
             .filter { request in
                 guard request.scheduledTime != nil else { return false }
                 if let techID = CurrentUser.technicianID ?? CurrentUser.id {
-                    return request.assignedTo == techID
+                    return request.assignedTechnicianID == techID
                 }
                 return true
             }

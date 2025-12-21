@@ -149,7 +149,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
             showAlert(title: "Missing Technician", message: "No technician ID available.")
             return
         }
-        request.assignedTo = techID
+        request.assignedTechnicianID = techID
         store.updateRequest(request)
         NotificationCenter.default.post(name: .technicianRequestsDidChange, object: nil)
         showAlert(title: "Assigned", message: "This job is now assigned to you.")
@@ -161,7 +161,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
             return
         }
 
-        if request.assignedTo != techID {
+        if request.assignedTechnicianID != techID {
             showAlert(title: "Assign first", message: "Assign the job to yourself to schedule it.")
             return
         }

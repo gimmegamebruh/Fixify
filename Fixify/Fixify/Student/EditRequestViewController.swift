@@ -155,7 +155,7 @@ final class EditRequestViewController: UIViewController {
             priority: priority,
             status: request.status,
             createdBy: request.createdBy,
-            assignedTo: request.assignedTo,
+            assignedTechnicianID: request.assignedTechnicianID,
             dateCreated: request.dateCreated,
             scheduledTime: request.scheduledTime,
             imageURL: request.imageURL

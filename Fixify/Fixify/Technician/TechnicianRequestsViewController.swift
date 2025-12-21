@@ -26,7 +26,7 @@ final class TechnicianRequestsViewController: UITableViewController {
             guard let techID else {
                 return true // fallback during setup so lists still render
             }
-            return request.assignedTo == techID
+            return request.assignedTechnicianID == techID
         }
     }
 
