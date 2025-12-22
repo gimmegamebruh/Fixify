@@ -38,7 +38,7 @@ final class StudentTabBarController: UITabBarController {
         )
 
         let profile = UINavigationController(
-            rootViewController: ProfileViewController()
+            rootViewController: SettingsViewController()
         )
         profile.tabBarItem = UITabBarItem(
             title: "Profile",

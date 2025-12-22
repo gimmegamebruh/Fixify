@@ -33,7 +33,7 @@ final class TechnicianTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "bell.fill")
         )
 
-        let profile = UINavigationController(rootViewController: ProfileViewController())
+        let profile = UINavigationController(rootViewController: SettingsViewController())
         profile.tabBarItem = UITabBarItem(
             title: "Profile",
             image: UIImage(systemName: "person"),
