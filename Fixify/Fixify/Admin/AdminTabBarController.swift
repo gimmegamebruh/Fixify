@@ -40,7 +40,7 @@ final class AdminTabBarController: UITabBarController {
         )
 
         let profileVC = UINavigationController(
-            rootViewController: PlaceholderViewController(titleText: "Admin Profile")
+            rootViewController: SettingsViewController()
         )
         profileVC.tabBarItem = UITabBarItem(
             title: "Profile",
