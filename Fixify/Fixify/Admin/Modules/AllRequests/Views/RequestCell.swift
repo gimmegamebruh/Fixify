@@ -3,14 +3,15 @@ import UIKit
 final class RequestCell: UITableViewCell {
 
     static let identifier = "RequestCell"
-
     var onAssignTap: (() -> Void)?
 
     private let card = UIView()
+
     private let titleLabel = UILabel()
     private let locationLabel = UILabel()
     private let dateLabel = UILabel()
-    private let statusBadge = UILabel()
+    private let statusBadge = StatusBadgeView()
+    private let photoView = UIImageView()
     private let assignButton = UIButton(type: .system)
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -18,121 +19,106 @@ final class RequestCell: UITableViewCell {
         setupUI()
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    // MARK: - UI Setup
+    required init?(coder: NSCoder) { fatalError() }
 
     private func setupUI() {
 
         selectionStyle = .none
         backgroundColor = .clear
 
-        card.backgroundColor = .white
-        card.layer.cornerRadius = 14
-        card.layer.shadowOpacity = 0.08
-        card.layer.shadowRadius = 6
-        card.layer.shadowOffset = CGSize(width: 0, height: 3)
-
-        titleLabel.font = .boldSystemFont(ofSize: 16)
-        locationLabel.font = .systemFont(ofSize: 14)
-        locationLabel.textColor = .darkGray
-        dateLabel.font = .systemFont(ofSize: 13)
-        dateLabel.textColor = .gray
-
-        statusBadge.font = .systemFont(ofSize: 12, weight: .semibold)
-        statusBadge.textColor = .white
-        statusBadge.textAlignment = .center
-        statusBadge.layer.cornerRadius = 10
-        statusBadge.layer.masksToBounds = true
-
-        assignButton.setTitle("Assign", for: .normal)
-        assignButton.setTitleColor(.white, for: .normal)
-        assignButton.layer.cornerRadius = 12
-        assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
-
-        let textStack = UIStackView(arrangedSubviews: [
-            titleLabel,
-            locationLabel,
-            dateLabel
-        ])
-        textStack.axis = .vertical
-        textStack.spacing = 6
-
-        let rightStack = UIStackView(arrangedSubviews: [
-            statusBadge,
-            assignButton
-        ])
-        rightStack.axis = .vertical
-        rightStack.spacing = 8
-        rightStack.alignment = .trailing
-
-        let mainStack = UIStackView(arrangedSubviews: [
-            textStack,
-            rightStack
-        ])
-        mainStack.axis = .horizontal
-        mainStack.spacing = 12
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-
-        contentView.addSubview(card)
-        card.addSubview(mainStack)
-
+        card.dsCard()
         card.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(card)
 
+        titleLabel.font = DS.Font.section()
+        locationLabel.font = DS.Font.body()
+        dateLabel.font = DS.Font.caption()
+        locationLabel.textColor = DS.Color.subtext
+        dateLabel.textColor = DS.Color.subtext
+
+        // IMAGE (same as student)
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = DS.Radius.sm
+        photoView.heightAnchor.constraint(equalToConstant: 180).isActive = true
+        photoView.isHidden = true
+
+        // SMALL PILL BUTTON
+        assignButton.setTitle("Assign", for: .normal)
+        assignButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        assignButton.backgroundColor = DS.Color.primary
+        assignButton.tintColor = .white
+        assignButton.layer.cornerRadius = 18
+        assignButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
-
-            mainStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
-            mainStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            mainStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
-            mainStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-
             assignButton.widthAnchor.constraint(equalToConstant: 90),
             assignButton.heightAnchor.constraint(equalToConstant: 36)
         ])
-    }
+        assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
 
-    // MARK: - Configuration
+        let buttonContainer = UIView()
+        buttonContainer.addSubview(assignButton)
+
+        NSLayoutConstraint.activate([
+            assignButton.leadingAnchor.constraint(equalTo: buttonContainer.leadingAnchor),
+            assignButton.topAnchor.constraint(equalTo: buttonContainer.topAnchor),
+            assignButton.bottomAnchor.constraint(equalTo: buttonContainer.bottomAnchor)
+        ])
+
+        let stack = UIStackView(arrangedSubviews: [
+            titleLabel,
+            locationLabel,
+            dateLabel,
+            statusBadge,
+            photoView,
+            buttonContainer
+        ])
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        card.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
+        ])
+    }
 
     func configure(with request: Request) {
 
         titleLabel.text = request.title
         locationLabel.text = request.location
 
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        dateLabel.text = formatter.string(from: request.dateCreated)
+        let df = DateFormatter()
+        df.dateStyle = .medium
+        dateLabel.text = df.string(from: request.dateCreated)
 
-        statusBadge.text = request.status.rawValue.uppercased()
+        statusBadge.configure(status: request.status)
 
-        switch request.status {
-        case .pending:
-            statusBadge.backgroundColor = .systemYellow
-
-        case .active:
-            statusBadge.backgroundColor = .systemBlue
-
-        case .escalated:
-            statusBadge.backgroundColor = .systemOrange
-
-        case .completed:
-            statusBadge.backgroundColor = .systemGreen
-
-        case .cancelled:
-            statusBadge.backgroundColor = .systemRed
-        }
-
-        // 🔒 Business rule: only pending / escalated can be assigned
         let canAssign = request.status == .pending || request.status == .escalated
-
         assignButton.isEnabled = canAssign
-        assignButton.backgroundColor = canAssign ? .systemBlue : .systemGray
-        assignButton.alpha = canAssign ? 1.0 : 0.5
+        assignButton.alpha = canAssign ? 1 : 0.4
+
+        photoView.image = nil
+        photoView.isHidden = request.imageURL == nil
+
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+            URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data else { return }
+                DispatchQueue.main.async {
+                    self?.photoView.image = UIImage(data: data)
+                }
+            }.resume()
+        }
     }
 
     @objc private func assignTapped() {

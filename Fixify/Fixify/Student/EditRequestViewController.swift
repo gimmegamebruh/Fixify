@@ -146,24 +146,30 @@ final class EditRequestViewController: UIViewController {
             rawValue: priorityField.text?.lowercased() ?? "low"
         ) ?? .low
 
-        let updated = Request(
-            id: request.id,
-            title: titleField.text ?? "",
-            description: descriptionView.text,
-            location: locationField.text ?? "",
-            category: categoryField.text ?? "",
-            priority: priority,
-            status: request.status,
-            createdBy: request.createdBy,
-            assignedTechnicianID: request.assignedTechnicianID,
-            dateCreated: request.dateCreated,
-            scheduledTime: request.scheduledTime,
-            imageURL: request.imageURL
-        )
+        func update(imageURL: String?) {
+            var updated = request!
+            updated.title = titleField.text ?? ""
+            updated.description = descriptionView.text
+            updated.location = locationField.text ?? ""
+            updated.category = categoryField.text ?? ""
+            updated.priority = priority
+            updated.imageURL = imageURL
 
-        store.updateRequest(updated)
-        navigationController?.popViewController(animated: true)
+            store.updateRequest(updated)
+            navigationController?.popViewController(animated: true)
+        }
+
+        if let image = selectedImage {
+            CloudinaryUploadService.shared.upload(image: image) { url in
+                DispatchQueue.main.async {
+                    update(imageURL: url)
+                }
+            }
+        } else {
+            update(imageURL: request.imageURL)
+        }
     }
+
 }
 
 // MARK: - Image Picker

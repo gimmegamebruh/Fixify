@@ -100,10 +100,6 @@ final class RatingViewController: UIViewController {
             comment: commentView.text
         )
         
-        NotificationCenter.default.post(
-            name: .technicianRequestsDidChange,
-            object: nil
-        )
 
 
         dismiss(animated: true)

@@ -1,8 +1,3 @@
-//
-//  AssignTechnicianViewController.swift
-//  Fixify
-//
-
 import UIKit
 
 final class AssignTechnicianViewController: UIViewController {
@@ -15,25 +10,27 @@ final class AssignTechnicianViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) not implemented")
-    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
         title = "Assign Technician"
         view.backgroundColor = .systemGroupedBackground
+
         setupTableView()
-        viewModel.load()
+
+        // 🔥 load + reload table
+        viewModel.load { [weak self] in
+            self?.tableView.reloadData()
+        }
     }
 
     private func setupTableView() {
-        tableView.register(
-            TechnicianCell.self,
-            forCellReuseIdentifier: TechnicianCell.identifier
-        )
+        tableView.register(TechnicianCell.self, forCellReuseIdentifier: TechnicianCell.identifier)
         tableView.dataSource = self
         tableView.separatorStyle = .none
+        tableView.backgroundColor = .clear
 
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -45,6 +42,12 @@ final class AssignTechnicianViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
+
+    private func showError(_ msg: String) {
+        let a = UIAlertController(title: "Error", message: msg, preferredStyle: .alert)
+        a.addAction(UIAlertAction(title: "OK", style: .default))
+        present(a, animated: true)
+    }
 }
 
 extension AssignTechnicianViewController: UITableViewDataSource {
@@ -53,28 +56,31 @@ extension AssignTechnicianViewController: UITableViewDataSource {
         viewModel.technicians.count
     }
 
-    func tableView(
-        _ tableView: UITableView,
-        cellForRowAt indexPath: IndexPath
-    ) -> UITableViewCell {
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(
             withIdentifier: TechnicianCell.identifier,
             for: indexPath
         ) as! TechnicianCell
 
-        let technician = viewModel.technician(at: indexPath.row)
+        let tech = viewModel.technician(at: indexPath.row)
 
         cell.configure(
-            with: technician,
-            isBusy: viewModel.isBusy(technician),
-            isCurrentlyAssigned: viewModel.isCurrentlyAssigned(technician)
+            with: tech,
+            isCurrentlyAssigned: viewModel.isCurrentlyAssigned(tech)
         )
 
+        // 🔥 closure must be set every time
         cell.onAssignTapped = { [weak self] in
-            self?.viewModel.assignTechnician(technician) { success in
-                if success {
-                    self?.navigationController?.popViewController(animated: true)
+            guard let self else { return }
+
+            self.viewModel.assignTechnician(tech) { success in
+                DispatchQueue.main.async {
+                    if success {
+                        self.navigationController?.popViewController(animated: true)
+                    } else {
+                        self.showError("Technician could not be assigned. Request not found.")
+                    }
                 }
             }
         }

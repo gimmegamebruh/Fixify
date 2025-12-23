@@ -5,8 +5,7 @@ final class NewRequestViewController: UIViewController {
 
     // MARK: - Dependencies
     private let store = RequestStore.shared
-    private let currentStudentID = "student123"
-
+    private let currentStudentID = CurrentUser.id ?? "unknown"
     // MARK: - UI
     private let scrollView = UIScrollView()
     private let stack = UIStackView()

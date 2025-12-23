@@ -1,18 +1,12 @@
-//
-//  AssignTechnicianViewModel.swift
-//  Fixify
-//
-
 import Foundation
 
 final class AssignTechnicianViewModel {
 
     private let technicianService: TechnicianServicing
-    private let requestStore = RequestStore.shared
+    private let store = RequestStore.shared
+    private let requestID: String
 
     private(set) var technicians: [Technician] = []
-    private let requestID: String
-    private var currentRequest: Request?
 
     init(
         requestID: String,
@@ -22,54 +16,47 @@ final class AssignTechnicianViewModel {
         self.technicianService = technicianService
     }
 
-    // MARK: - Load
+    // MARK: - Load (with completion so VC can reload)
+    func load(completion: @escaping () -> Void) {
 
-    func load() {
         technicianService.fetchAll { [weak self] techs in
-            self?.technicians = techs
-        }
+            guard let self else { return }
+            self.technicians = techs
 
-        currentRequest = requestStore.requests.first {
-            $0.id == requestID
+            DispatchQueue.main.async {
+                completion()
+            }
         }
     }
 
-    // MARK: - Helpers
+    // Always fetch the latest request from the store
+    private func currentRequest() -> Request? {
+        store.requests.first(where: { $0.id == requestID })
+    }
 
     func technician(at index: Int) -> Technician {
         technicians[index]
     }
 
-    func isBusy(_ technician: Technician) -> Bool {
-        false // 🔓 multiple assignments allowed (for now)
-    }
-
     func isCurrentlyAssigned(_ technician: Technician) -> Bool {
-        currentRequest?.assignedTechnicianID == technician.id
+        currentRequest()?.assignedTechnicianID == technician.id
     }
 
-    // MARK: - Assign
+    // MARK: - Assign (🔥 GUARANTEED)
+    func assignTechnician(_ technician: Technician, completion: @escaping (Bool) -> Void) {
 
-    func assignTechnician(
-        _ technician: Technician,
-        completion: @escaping (Bool) -> Void
-    ) {
-        guard var request = currentRequest else {
+        guard var request = currentRequest() else {
+            print("❌ Assign failed: Request not found in store for id:", requestID)
             completion(false)
             return
         }
 
-        guard request.assignedTechnicianID != technician.id else {
-            completion(false)
-            return
-        }
+        print("✅ Tapped assign for tech:", technician.id, "on request:", request.id)
 
-        // ✅ Update request
         request.assignedTechnicianID = technician.id
-        request.status = .active
+        request.status = .active   // ✅ MUST become active
 
-        // 🔥 Firebase update (LIVE)
-        RequestStore.shared.updateRequest(request)
+        store.updateRequest(request)
 
         completion(true)
     }

@@ -2,20 +2,14 @@ import Foundation
 
 final class AdminDashboardViewModel {
 
-    private let service: RequestServicing = LocalRequestService.shared
-    private(set) var requests: [Request] = []
+    // 🔥 SINGLE SOURCE OF TRUTH
+    private let store = RequestStore.shared
 
-    init() {
-        reload()
+    private var requests: [Request] {
+        store.requests
     }
 
-    func reload() {
-        service.fetchAll { [weak self] data in
-            self?.requests = data
-        }
-    }
-
-    // MARK: - Stats
+    // MARK: - Stats Cards
 
     var totalRequests: Int {
         requests.count
