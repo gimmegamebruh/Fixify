@@ -1,6 +1,11 @@
 import UIKit
+import FirebaseAuth
+import FirebaseFirestore
 
 final class SettingsViewController: UIViewController {
+
+    private var currentUserID: String?
+    private let db = Firestore.firestore()
 
     private enum Section: Int, CaseIterable {
         case account
@@ -69,7 +74,7 @@ final class SettingsViewController: UIViewController {
     
     private let nameLabel: UILabel = {
         let label = UILabel()
-        label.text = "John Doe"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 22, weight: .semibold)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -77,7 +82,7 @@ final class SettingsViewController: UIViewController {
     
     private let emailLabel: UILabel = {
         let label = UILabel()
-        label.text = "john.doe@student.com"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 15, weight: .regular)
         label.textColor = .systemGray
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -99,11 +104,13 @@ final class SettingsViewController: UIViewController {
         setupTableView()
         setupProfileHeader()
         setupAppearance()
+        loadUserData()
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(true)
+        super.viewWillAppear(animated)
         setupAppearance()
+        loadUserData() // Reload user data when view appears
     }
     
     // MARK: - Setup Methods
@@ -177,6 +184,61 @@ final class SettingsViewController: UIViewController {
         ])
     }
     
+    // MARK: - Load User Data
+    
+    private func loadUserData() {
+        guard let user = Auth.auth().currentUser else {
+            print("No user logged in")
+            return
+        }
+        
+        currentUserID = user.uid
+        
+        // Load email from Firebase Auth
+        let userEmail = user.email ?? "No email"
+        emailLabel.text = userEmail
+        
+        // Load name and profile image from Firestore
+        db.collection("users").document(user.uid).getDocument { [weak self] document, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error loading user data: \(error.localizedDescription)")
+                return
+            }
+            
+            if let document = document, document.exists {
+                let data = document.data()
+                
+                DispatchQueue.main.async {
+                    // Update name
+                    if let name = data?["name"] as? String {
+                        self.nameLabel.text = name
+                    }
+                    
+                    // Load profile image if URL exists
+                    if let imageURL = data?["profileImageURL"] as? String {
+                        self.loadProfileImage(from: imageURL)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func loadProfileImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self, let data = data, error == nil else {
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self.profileImageView.image = UIImage(data: data)
+            }
+        }.resume()
+    }
+    
     // MARK: - Dynamic Colors
     
     private func dynamicTextColor() -> UIColor {
@@ -207,7 +269,73 @@ final class SettingsViewController: UIViewController {
         // Save the preference
         UserDefaults.standard.set(sender.isOn, forKey: "isDarkModeEnabled")
     }
-
+    
+    // MARK: - Logout Functionality
+    
+    private func handleLogout() {
+        let alert = UIAlertController(
+            title: "Logout",
+            message: "Are you sure you want to logout?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { [weak self] _ in
+            self?.performLogout()
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    private func performLogout() {
+        do {
+            // Sign out from Firebase
+            try Auth.auth().signOut()
+            
+           
+            CurrentUser.clear()
+            
+            DispatchQueue.main.async {
+                self.navigateToLogin()
+            }
+            
+        } catch let error {
+            print("Error logging out: \(error.localizedDescription)")
+            showLogoutErrorAlert()
+        }
+    }
+    
+    private func navigateToLogin() {
+        // Get the window scene
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return
+        }
+        
+        // Create login view controller
+        let loginVC = LoginViewController()
+        let navController = UINavigationController(rootViewController: loginVC)
+        
+        // Set as root view controller with animation
+        window.rootViewController = navController
+        
+        UIView.transition(with: window,
+                          duration: 0.3,
+                          options: .transitionCrossDissolve,
+                          animations: nil,
+                          completion: nil)
+    }
+    
+    private func showLogoutErrorAlert() {
+        let alert = UIAlertController(
+            title: "Error",
+            message: "Failed to logout. Please try again.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -264,6 +392,12 @@ extension SettingsViewController: UITableViewDataSource {
             toggle.addTarget(self, action: #selector(darkModeChanged(_:)), for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
+            
+        case .logout:
+            // Style logout cell differently
+            content.textProperties.color = .systemRed
+            cell.contentConfiguration = content
+            cell.accessoryType = .none
 
         default:
             cell.accessoryType = .disclosureIndicator
@@ -285,26 +419,34 @@ extension SettingsViewController: UITableViewDelegate {
         switch row {
         case .viewProfile:
             let profileVC = ProfileViewController()
-                navigationController?.pushViewController(profileVC, animated: true)
+            navigationController?.pushViewController(profileVC, animated: true)
+            
         case .editProfile:
             let editProfileVC = EditProfileViewController()
-                navigationController?.pushViewController(editProfileVC, animated: true)
+            navigationController?.pushViewController(editProfileVC, animated: true)
+            
         case .logout:
-            print("Logout")
+            handleLogout()
+            
         case .appVersion:
             print("App Version")
+            
         case .faq:
             let faqVC = FAQViewController()
             navigationController?.pushViewController(faqVC, animated: true)
+            
         case .terms:
             let termsVC = Term_ServiceViewController()
             navigationController?.pushViewController(termsVC, animated: true)
+            
         case .contact:
             let contactVC = ContactViewController()
             navigationController?.pushViewController(contactVC, animated: true)
+            
         case .privacyPolicy:
             let privacyVC = PrivacyPolicyViewController()
             navigationController?.pushViewController(privacyVC, animated: true)
+            
         default:
             break
         }

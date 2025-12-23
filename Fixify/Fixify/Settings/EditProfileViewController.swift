@@ -1,6 +1,13 @@
 import UIKit
+import FirebaseAuth
+import FirebaseFirestore
+import FirebaseStorage
 
 final class EditProfileViewController: UIViewController {
+    
+    private var currentUserID: String?
+    private let db = Firestore.firestore()
+    private var selectedImage: UIImage?
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -47,8 +54,8 @@ final class EditProfileViewController: UIViewController {
     
     private let contactTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "12345678"
-        textField.text = "12345678"
+        textField.placeholder = "Contact Number"
+        textField.text = ""
         textField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         textField.borderStyle = .none
         textField.backgroundColor = .white
@@ -75,8 +82,8 @@ final class EditProfileViewController: UIViewController {
     
     private let addressTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "675, 7578, 602"
-        textField.text = "675, 7578, 602"
+        textField.placeholder = "Street, Building, Block"
+        textField.text = ""
         textField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         textField.borderStyle = .none
         textField.backgroundColor = .white
@@ -102,8 +109,8 @@ final class EditProfileViewController: UIViewController {
     
     private let emergencyTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "45368522"
-        textField.text = "45368522"
+        textField.placeholder = "Emergency Contact Number"
+        textField.text = ""
         textField.font = UIFont.systemFont(ofSize: 16, weight: .regular)
         textField.borderStyle = .none
         textField.backgroundColor = .white
@@ -136,6 +143,7 @@ final class EditProfileViewController: UIViewController {
         setupNavigationBar()
         setupUI()
         setupActions()
+        loadUserData()
         
         // Dismiss keyboard on tap
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
@@ -271,6 +279,52 @@ final class EditProfileViewController: UIViewController {
         profileImageView.addGestureRecognizer(tapGesture)
     }
     
+    // MARK: - Load User Data
+    
+    private func loadUserData() {
+        guard let user = Auth.auth().currentUser else { return }
+        
+        currentUserID = user.uid
+        
+        // Load data from Firestore
+        db.collection("users").document(user.uid).getDocument { [weak self] document, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error loading user data: \(error.localizedDescription)")
+                return
+            }
+            
+            if let document = document, document.exists {
+                let data = document.data()
+                
+                DispatchQueue.main.async {
+                    // Update UI with user data
+                    self.contactTextField.text = data?["contactNumber"] as? String ?? ""
+                    self.addressTextField.text = data?["address"] as? String ?? ""
+                    self.emergencyTextField.text = data?["emergencyContact"] as? String ?? ""
+                    
+                    // Load profile image if URL exists
+                    if let imageURL = data?["profileImageURL"] as? String {
+                        self.loadProfileImage(from: imageURL)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func loadProfileImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self, let data = data, error == nil else { return }
+            
+            DispatchQueue.main.async {
+                self.profileImageView.image = UIImage(data: data)
+            }
+        }.resume()
+    }
+    
     // MARK: - Actions
     
     @objc private func backButtonTapped() {
@@ -278,7 +332,7 @@ final class EditProfileViewController: UIViewController {
     }
     
     @objc private func confirmButtonTapped() {
-        // Validate and save changes
+        // Validate input
         guard let contact = contactTextField.text, !contact.isEmpty else {
             showAlert(message: "Please enter a contact number")
             return
@@ -294,13 +348,83 @@ final class EditProfileViewController: UIViewController {
             return
         }
         
-        // Save the data (you can use UserDefaults, Core Data, or send to server)
-        UserDefaults.standard.set(contact, forKey: "userContact")
-        UserDefaults.standard.set(address, forKey: "userAddress")
-        UserDefaults.standard.set(emergency, forKey: "userEmergency")
+        guard let userID = currentUserID else {
+            showAlert(message: "User not authenticated")
+            return
+        }
         
-        showAlert(message: "Profile updated successfully!") {
-            self.navigationController?.popViewController(animated: true)
+        // Show loading indicator
+        let activityIndicator = UIActivityIndicatorView(style: .large)
+        activityIndicator.center = view.center
+        view.addSubview(activityIndicator)
+        activityIndicator.startAnimating()
+        confirmButton.isEnabled = false
+        
+        // If user selected a new image, upload it first
+        if let image = selectedImage {
+            uploadProfileImage(image) { [weak self] imageURL in
+                guard let self = self else { return }
+                self.saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: imageURL, activityIndicator: activityIndicator)
+            }
+        } else {
+            // Save without updating image
+            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, activityIndicator: activityIndicator)
+        }
+    }
+    
+    private func saveUserData(userID: String, contact: String, address: String, emergency: String, imageURL: String?, activityIndicator: UIActivityIndicatorView) {
+        var userData: [String: Any] = [
+            "contactNumber": contact,
+            "address": address,
+            "emergencyContact": emergency,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        // Add image URL if a new image was uploaded
+        if let imageURL = imageURL {
+            userData["profileImageURL"] = imageURL
+        }
+        
+        // Save to Firestore
+        db.collection("users").document(userID).setData(userData, merge: true) { [weak self] error in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                activityIndicator.stopAnimating()
+                activityIndicator.removeFromSuperview()
+                self.confirmButton.isEnabled = true
+                
+                if let error = error {
+                    self.showAlert(message: "Error saving profile: \(error.localizedDescription)")
+                } else {
+                    self.showAlert(message: "Profile updated successfully!") {
+                        self.navigationController?.popViewController(animated: true)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func uploadProfileImage(_ image: UIImage, completion: @escaping (String?) -> Void) {
+        guard let userID = currentUserID,
+              let imageData = image.jpegData(compressionQuality: 0.5) else {
+            completion(nil)
+            return
+        }
+        
+        let storageRef = Storage.storage().reference()
+        let profileImageRef = storageRef.child("profile_images/\(userID).jpg")
+        
+        profileImageRef.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error {
+                print("Error uploading image: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            profileImageRef.downloadURL { url, error in
+                completion(url?.absoluteString)
+            }
         }
     }
     
@@ -336,13 +460,24 @@ final class EditProfileViewController: UIViewController {
     }
     
     private func openCamera() {
-        // Implement camera functionality
-        print("Open Camera")
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showAlert(message: "Camera is not available")
+            return
+        }
+        
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = self
+        picker.allowsEditing = true
+        present(picker, animated: true)
     }
     
     private func openPhotoLibrary() {
-        // Implement photo library functionality
-        print("Open Photo Library")
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = self
+        picker.allowsEditing = true
+        present(picker, animated: true)
     }
     
     // MARK: - Dynamic Colors
@@ -363,5 +498,27 @@ final class EditProfileViewController: UIViewController {
         return UIColor { (traitCollection: UITraitCollection) -> UIColor in
             return traitCollection.userInterfaceStyle == .dark ? .darkGray : .white
         }
+    }
+}
+
+// MARK: - UIImagePickerControllerDelegate
+
+extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        
+        if let editedImage = info[.editedImage] as? UIImage {
+            selectedImage = editedImage
+            profileImageView.image = editedImage
+        } else if let originalImage = info[.originalImage] as? UIImage {
+            selectedImage = originalImage
+            profileImageView.image = originalImage
+        }
+        
+        picker.dismiss(animated: true)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
     }
 }
