@@ -1,6 +1,11 @@
 import UIKit
+import FirebaseAuth
+import FirebaseFirestore
 
 final class ProfileViewController: UIViewController {
+    
+    private var currentUserID: String?
+    private let db = Firestore.firestore()
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -40,7 +45,7 @@ final class ProfileViewController: UIViewController {
     
     private let nameLabel: UILabel = {
         let label = UILabel()
-        label.text = "Name: John Doe"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -48,7 +53,7 @@ final class ProfileViewController: UIViewController {
     
     private let studentIdLabel: UILabel = {
         let label = UILabel()
-        label.text = "Student ID: 12345678"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -56,7 +61,7 @@ final class ProfileViewController: UIViewController {
     
     private let emailLabel: UILabel = {
         let label = UILabel()
-        label.text = "Email: 123456@gmail.com"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -64,7 +69,7 @@ final class ProfileViewController: UIViewController {
     
     private let contactLabel: UILabel = {
         let label = UILabel()
-        label.text = "Contact Number: 12345678"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -72,7 +77,7 @@ final class ProfileViewController: UIViewController {
     
     private let addressLabel: UILabel = {
         let label = UILabel()
-        label.text = "Address (Street, Building, Block): 675, 7578, 602"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -81,7 +86,7 @@ final class ProfileViewController: UIViewController {
     
     private let EmergencyLabel: UILabel = {
         let label = UILabel()
-        label.text = "Emergency Contact Number: 45368522"
+        label.text = ""
         label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -92,6 +97,13 @@ final class ProfileViewController: UIViewController {
         super.viewDidLoad()
         setupNavigationBar()
         setupUI()
+        loadUserData()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Reload data when coming back from edit screen
+        loadUserData()
     }
     
     private func setupNavigationBar() {
@@ -196,6 +208,104 @@ final class ProfileViewController: UIViewController {
         
         // Update card background for dark mode
         infoCardView.backgroundColor = dynamicCardBackgroundColor()
+    }
+    
+    // MARK: - Load User Data
+    
+    private func loadUserData() {
+        guard let user = Auth.auth().currentUser else {
+            showAlert(message: "No user logged in")
+            return
+        }
+        
+        currentUserID = user.uid
+        
+        // Load basic auth data
+        let userEmail = user.email ?? "No email"
+        emailLabel.text = "Email: \(userEmail)"
+        
+        // Load additional data from Firestore
+        db.collection("users").document(user.uid).getDocument { [weak self] document, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error loading user data: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.showAlert(message: "Error loading profile data")
+                }
+                return
+            }
+            
+            if let document = document, document.exists {
+                let data = document.data()
+                
+                DispatchQueue.main.async {
+                    // Update UI with Firestore data
+                    if let name = data?["name"] as? String {
+                        self.nameLabel.text = "Name: \(name)"
+                    }
+                    
+                    if let studentId = data?["studentId"] as? String {
+                        self.studentIdLabel.text = "Student ID: \(studentId)"
+                    }
+                    
+                    if let contact = data?["contactNumber"] as? String {
+                        self.contactLabel.text = "Contact Number: \(contact)"
+                    }
+                    
+                    if let address = data?["address"] as? String {
+                        self.addressLabel.text = "Address (Street, Building, Block): \(address)"
+                    }
+                    
+                    if let emergency = data?["emergencyContact"] as? String {
+                        self.EmergencyLabel.text = "Emergency Contact Number: \(emergency)"
+                    }
+                    
+                    // Load profile image if URL exists
+                    if let imageURL = data?["profileImageURL"] as? String {
+                        self.loadProfileImage(from: imageURL)
+                    }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.showAlert(message: "Profile data not found. Please complete your profile.")
+                }
+            }
+        }
+    }
+    
+    private func loadProfileImage(from urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        
+        // Show loading indicator on image
+        let activityIndicator = UIActivityIndicatorView(style: .medium)
+        activityIndicator.center = CGPoint(x: profileImageView.bounds.midX, y: profileImageView.bounds.midY)
+        profileImageView.addSubview(activityIndicator)
+        activityIndicator.startAnimating()
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self, let data = data, error == nil else {
+                DispatchQueue.main.async {
+                    activityIndicator.stopAnimating()
+                    activityIndicator.removeFromSuperview()
+                }
+                return
+            }
+            
+            DispatchQueue.main.async {
+                activityIndicator.stopAnimating()
+                activityIndicator.removeFromSuperview()
+                self.profileImageView.image = UIImage(data: data)
+            }
+        }.resume()
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func showAlert(message: String) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
     
     // MARK: - Dynamic Colors
