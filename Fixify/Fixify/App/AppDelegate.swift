@@ -9,8 +9,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
 
-        FirebaseApp.configure()   // 🔥 REQUIRED
+        FirebaseApp.configure()
+
         FixifyAppearance.apply()
+
+        
+        _ = RequestStore.shared
+
         return true
     }
 
@@ -25,7 +30,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             sessionRole: connectingSceneSession.role
         )
     }
-    
-
 }
-
