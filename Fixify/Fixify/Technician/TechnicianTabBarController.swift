@@ -48,8 +48,9 @@ final class TechnicianTabBarController: UITabBarController {
         )
 
         let notifications = UINavigationController(
-            rootViewController: NotificationsViewController()
+            rootViewController: TechnicianNotificationsViewController()
         )
+
         notifications.tabBarItem = UITabBarItem(
             title: "Notifications",
             image: UIImage(systemName: "bell"),

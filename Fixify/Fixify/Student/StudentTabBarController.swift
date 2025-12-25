@@ -20,7 +20,7 @@ final class StudentTabBarController: UITabBarController {
         )
 
         let notifications = UINavigationController(
-            rootViewController: NotificationsViewController()
+            rootViewController: StudentNotificationsViewController()
         )
         notifications.tabBarItem = UITabBarItem(
             title: "Notifications",

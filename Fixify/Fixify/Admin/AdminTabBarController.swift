@@ -29,10 +29,10 @@ final class AdminTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "doc.text.fill")
         )
 
-        // (can stay placeholder for now)
         let notificationsVC = UINavigationController(
-            rootViewController: PlaceholderViewController(titleText: "Admin Notifications")
+            rootViewController: AdminNotificationsViewController()
         )
+
         notificationsVC.tabBarItem = UITabBarItem(
             title: "Notifications",
             image: UIImage(systemName: "bell"),
