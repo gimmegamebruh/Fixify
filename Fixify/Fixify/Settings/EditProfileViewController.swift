@@ -8,6 +8,8 @@ final class EditProfileViewController: UIViewController {
     private var currentUserID: String?
     private let db = Firestore.firestore()
     private var selectedImage: UIImage?
+    private var shouldRemovePhoto = false
+    private var hadProfileImage = false // Track if user had a photo when view loaded
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -304,9 +306,15 @@ final class EditProfileViewController: UIViewController {
                     self.addressTextField.text = data?["address"] as? String ?? ""
                     self.emergencyTextField.text = data?["emergencyContact"] as? String ?? ""
                     
-                    // Load profile image if URL exists
-                    if let imageURL = data?["profileImageURL"] as? String {
+                    // Load profile image if URL exists, otherwise keep default
+                    if let imageURL = data?["profileImageURL"] as? String, !imageURL.isEmpty {
                         self.loadProfileImage(from: imageURL)
+                        self.hadProfileImage = true
+                    } else {
+                        // No image in Firebase - set to default
+                        self.profileImageView.image = UIImage(systemName: "person.crop.circle")
+                        self.profileImageView.tintColor = .systemGray3
+                        self.hadProfileImage = false
                     }
                 }
             }
@@ -320,7 +328,9 @@ final class EditProfileViewController: UIViewController {
             guard let self = self, let data = data, error == nil else { return }
             
             DispatchQueue.main.async {
-                self.profileImageView.image = UIImage(data: data)
+                if let image = UIImage(data: data) {
+                    self.profileImageView.image = image
+                }
             }
         }.resume()
     }
@@ -348,31 +358,59 @@ final class EditProfileViewController: UIViewController {
             return
         }
         
+        // Check if profile image is set
+        let isDefaultImage = profileImageView.image == UIImage(systemName: "person.crop.circle")
+        
+        // User must have either: a new image selected, an existing image, or explicitly removing their photo
+        let hasNoImage = isDefaultImage && selectedImage == nil && !hadProfileImage && !shouldRemovePhoto
+        
+        if hasNoImage || (shouldRemovePhoto && !hadProfileImage) {
+            showAlert(message: "Please select a profile picture")
+            return
+        }
+        
         guard let userID = currentUserID else {
             showAlert(message: "User not authenticated")
             return
         }
         
         // Show loading indicator
+        let loadingView = UIView(frame: view.bounds)
+        loadingView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        loadingView.tag = 999
+        
         let activityIndicator = UIActivityIndicatorView(style: .large)
-        activityIndicator.center = view.center
-        view.addSubview(activityIndicator)
+        activityIndicator.color = .white
+        activityIndicator.center = loadingView.center
         activityIndicator.startAnimating()
+        
+        loadingView.addSubview(activityIndicator)
+        view.addSubview(loadingView)
         confirmButton.isEnabled = false
         
-        // If user selected a new image, upload it first
-        if let image = selectedImage {
-            uploadProfileImage(image) { [weak self] imageURL in
+        // Check if user wants to remove photo
+        if shouldRemovePhoto {
+            // Remove photo from Firebase
+            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, removePhoto: true)
+        } else if let image = selectedImage {
+            // Upload new image
+            uploadImageToCloudinary(image) { [weak self] imageURL in
                 guard let self = self else { return }
-                self.saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: imageURL, activityIndicator: activityIndicator)
+                self.saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: imageURL, removePhoto: false)
             }
         } else {
             // Save without updating image
-            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, activityIndicator: activityIndicator)
+            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, removePhoto: false)
         }
     }
     
-    private func saveUserData(userID: String, contact: String, address: String, emergency: String, imageURL: String?, activityIndicator: UIActivityIndicatorView) {
+    private func uploadImageToCloudinary(_ image: UIImage, completion: @escaping (String?) -> Void) {
+        CloudinaryUploadService.shared.upload(image: image) { imageURL in
+            completion(imageURL)
+        }
+    }
+    
+    private func saveUserData(userID: String, contact: String, address: String, emergency: String, imageURL: String?, removePhoto: Bool) {
         var userData: [String: Any] = [
             "contactNumber": contact,
             "address": address,
@@ -380,8 +418,10 @@ final class EditProfileViewController: UIViewController {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // Add image URL if a new image was uploaded
-        if let imageURL = imageURL {
+        // Handle photo removal or update
+        if removePhoto {
+            userData["profileImageURL"] = FieldValue.delete()
+        } else if let imageURL = imageURL {
             userData["profileImageURL"] = imageURL
         }
         
@@ -390,8 +430,10 @@ final class EditProfileViewController: UIViewController {
             guard let self = self else { return }
             
             DispatchQueue.main.async {
-                activityIndicator.stopAnimating()
-                activityIndicator.removeFromSuperview()
+                // Remove loading indicator
+                if let loadingView = self.view.viewWithTag(999) {
+                    loadingView.removeFromSuperview()
+                }
                 self.confirmButton.isEnabled = true
                 
                 if let error = error {
@@ -405,31 +447,8 @@ final class EditProfileViewController: UIViewController {
         }
     }
     
-    private func uploadProfileImage(_ image: UIImage, completion: @escaping (String?) -> Void) {
-        guard let userID = currentUserID,
-              let imageData = image.jpegData(compressionQuality: 0.5) else {
-            completion(nil)
-            return
-        }
-        
-        let storageRef = Storage.storage().reference()
-        let profileImageRef = storageRef.child("profile_images/\(userID).jpg")
-        
-        profileImageRef.putData(imageData, metadata: nil) { metadata, error in
-            if let error = error {
-                print("Error uploading image: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            
-            profileImageRef.downloadURL { url, error in
-                completion(url?.absoluteString)
-            }
-        }
-    }
-    
     @objc private func profileImageTapped() {
-        // Show image picker
+        // Show image picker options
         let alert = UIAlertController(title: "Change Profile Picture", message: "Choose an option", preferredStyle: .actionSheet)
         
         alert.addAction(UIAlertAction(title: "Take Photo", style: .default, handler: { _ in
@@ -440,7 +459,40 @@ final class EditProfileViewController: UIViewController {
             self.openPhotoLibrary()
         }))
         
+        if profileImageView.image != UIImage(systemName: "person.crop.circle") {
+            alert.addAction(UIAlertAction(title: "Remove Photo", style: .destructive) { [weak self] _ in
+                self?.removeProfilePhoto()
+            })
+        }
+        
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        // For iPad support
+        if let popoverController = alert.popoverPresentationController {
+            popoverController.sourceView = profileImageView
+            popoverController.sourceRect = profileImageView.bounds
+        }
+        
+        present(alert, animated: true)
+    }
+    
+    private func removeProfilePhoto() {
+        let alert = UIAlertController(
+            title: "Remove Photo",
+            message: "This will remove your profile photo when you save.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Remove", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            
+            // Reset to default image
+            self.profileImageView.image = UIImage(systemName: "person.crop.circle")
+            self.profileImageView.tintColor = .systemGray3
+            self.selectedImage = nil
+            self.shouldRemovePhoto = true
+        })
         
         present(alert, animated: true)
     }
@@ -510,9 +562,11 @@ extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigati
         if let editedImage = info[.editedImage] as? UIImage {
             selectedImage = editedImage
             profileImageView.image = editedImage
+            shouldRemovePhoto = false
         } else if let originalImage = info[.originalImage] as? UIImage {
             selectedImage = originalImage
             profileImageView.image = originalImage
+            shouldRemovePhoto = false
         }
         
         picker.dismiss(animated: true)

@@ -66,7 +66,7 @@ final class SettingsViewController: UIViewController {
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 40
         imageView.backgroundColor = .systemGray5
-        imageView.image = UIImage(systemName: "person.circle.fill")
+        imageView.image = UIImage(systemName: "person.crop.circle")
         imageView.tintColor = .systemGray3
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
@@ -101,6 +101,10 @@ final class SettingsViewController: UIViewController {
         super.viewDidLoad()
         self.navigationItem.title = "Settings"
         view.backgroundColor = .systemBackground
+        
+        // Apply saved dark mode preference on app launch
+        applySavedDarkModePreference()
+        
         setupTableView()
         setupProfileHeader()
         setupAppearance()
@@ -110,13 +114,36 @@ final class SettingsViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         setupAppearance()
-        loadUserData() // Reload user data when view appears
+        loadUserData()
     }
     
     // MARK: - Setup Methods
     
+    private func applySavedDarkModePreference() {
+        // Check if user has ever set a preference
+        let hasSetPreference = UserDefaults.standard.object(forKey: "isDarkModeEnabled") != nil
+        
+        if hasSetPreference {
+            let isDarkModeEnabled = UserDefaults.standard.bool(forKey: "isDarkModeEnabled")
+            let style: UIUserInterfaceStyle = isDarkModeEnabled ? .dark : .light
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.windows.forEach { window in
+                    window.overrideUserInterfaceStyle = style
+                }
+            }
+        } else {
+            // First time - set to system default (unspecified) and save as OFF
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.windows.forEach { window in
+                    window.overrideUserInterfaceStyle = .unspecified
+                }
+            }
+            UserDefaults.standard.set(false, forKey: "isDarkModeEnabled")
+        }
+    }
+    
     private func setupProfileHeader() {
-        // Set the frame for the header container
         profileHeaderContainer.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
         
         profileHeaderContainer.addSubview(profileImageView)
@@ -138,10 +165,7 @@ final class SettingsViewController: UIViewController {
             emailLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4)
         ])
         
-        // Set the header view
         tableView.tableHeaderView = profileHeaderContainer
-        
-        // Apply dynamic colors to labels
         nameLabel.textColor = dynamicTextColor()
         emailLabel.textColor = UIColor.systemGray
     }
@@ -150,13 +174,9 @@ final class SettingsViewController: UIViewController {
         guard let navigationController = self.navigationController else { return }
         
         let appearance = UINavigationBarAppearance()
-        
-        // Use systemGroupedBackground to match the insetGrouped table view style
         appearance.backgroundColor = .systemGroupedBackground
         appearance.shadowColor = .clear
         appearance.shadowImage = UIImage()
-        
-        // Use dynamic color for title text
         appearance.titleTextAttributes = [
             .foregroundColor: UIColor.label
         ]
@@ -165,7 +185,6 @@ final class SettingsViewController: UIViewController {
         navigationController.navigationBar.scrollEdgeAppearance = appearance
         navigationController.navigationBar.tintColor = .label
         
-        // Update view background to match
         view.backgroundColor = .systemGroupedBackground
     }
     
@@ -194,11 +213,9 @@ final class SettingsViewController: UIViewController {
         
         currentUserID = user.uid
         
-        // Load email from Firebase Auth
         let userEmail = user.email ?? "No email"
         emailLabel.text = userEmail
         
-        // Load name and profile image from Firestore
         db.collection("users").document(user.uid).getDocument { [weak self] document, error in
             guard let self = self else { return }
             
@@ -211,14 +228,17 @@ final class SettingsViewController: UIViewController {
                 let data = document.data()
                 
                 DispatchQueue.main.async {
-                    // Update name
                     if let name = data?["name"] as? String {
                         self.nameLabel.text = name
                     }
                     
-                    // Load profile image if URL exists
-                    if let imageURL = data?["profileImageURL"] as? String {
+                    // Load profile image if URL exists, otherwise keep default
+                    if let imageURL = data?["profileImageURL"] as? String, !imageURL.isEmpty {
                         self.loadProfileImage(from: imageURL)
+                    } else {
+                        // No image in Firebase - set to default
+                        self.profileImageView.image = UIImage(systemName: "person.crop.circle")
+                        self.profileImageView.tintColor = .systemGray3
                     }
                 }
             }
@@ -234,7 +254,13 @@ final class SettingsViewController: UIViewController {
             }
             
             DispatchQueue.main.async {
-                self.profileImageView.image = UIImage(data: data)
+                if let image = UIImage(data: data) {
+                    self.profileImageView.image = image
+                } else {
+                    // If image loading fails, show default
+                    self.profileImageView.image = UIImage(systemName: "person.crop.circle")
+                    self.profileImageView.tintColor = .systemGray3
+                }
             }
         }.resume()
     }
@@ -252,21 +278,17 @@ final class SettingsViewController: UIViewController {
     @objc private func darkModeChanged(_ sender: UISwitch) {
         let newStyle: UIUserInterfaceStyle = sender.isOn ? .dark : .light
         
-        // Change the interface style for the entire app
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             windowScene.windows.forEach { window in
                 window.overrideUserInterfaceStyle = newStyle
             }
         }
         
-        // Refresh the navigation bar appearance after the style change
         setupAppearance()
         
-        // Update switch colors based on dark mode state
         sender.onTintColor = sender.isOn ? .black : .systemGreen
         sender.thumbTintColor = .white
         
-        // Save the preference
         UserDefaults.standard.set(sender.isOn, forKey: "isDarkModeEnabled")
     }
     
@@ -290,11 +312,18 @@ final class SettingsViewController: UIViewController {
     
     private func performLogout() {
         do {
-            // Sign out from Firebase
             try Auth.auth().signOut()
-            
-           
             CurrentUser.clear()
+            
+            // Reset dark mode to OFF when logging out
+            UserDefaults.standard.set(false, forKey: "isDarkModeEnabled")
+            
+            // Reset app appearance to system default
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                windowScene.windows.forEach { window in
+                    window.overrideUserInterfaceStyle = .unspecified
+                }
+            }
             
             DispatchQueue.main.async {
                 self.navigateToLogin()
@@ -307,17 +336,14 @@ final class SettingsViewController: UIViewController {
     }
     
     private func navigateToLogin() {
-        // Get the window scene
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else {
             return
         }
         
-        // Create login view controller
         let loginVC = LoginViewController()
         let navController = UINavigationController(rootViewController: loginVC)
         
-        // Set as root view controller with animation
         window.rootViewController = navController
         
         UIView.transition(with: window,
@@ -360,7 +386,6 @@ extension SettingsViewController: UITableViewDataSource {
     ) -> UITableViewCell {
 
         let row = sections[indexPath.section][indexPath.row]
-        // Use dequeuing with the registered cell identifier for efficiency
         let cell = UITableViewCell(style: .value1, reuseIdentifier: "cell")
         
         var content = cell.defaultContentConfiguration()
@@ -382,11 +407,11 @@ extension SettingsViewController: UITableViewDataSource {
         case .darkMode:
             let toggle = UISwitch()
             
-            // Restore saved preference or use current system style
-            let savedDarkMode = UserDefaults.standard.bool(forKey: "isDarkModeEnabled")
-            toggle.isOn = savedDarkMode
+            // Always default to OFF unless user explicitly turned it ON
+            let isDarkModeEnabled = UserDefaults.standard.bool(forKey: "isDarkModeEnabled")
+            toggle.isOn = isDarkModeEnabled
             
-            toggle.onTintColor = savedDarkMode ? .black : .systemGreen
+            toggle.onTintColor = isDarkModeEnabled ? .black : .systemGreen
             toggle.thumbTintColor = .white
             
             toggle.addTarget(self, action: #selector(darkModeChanged(_:)), for: .valueChanged)
@@ -394,7 +419,6 @@ extension SettingsViewController: UITableViewDataSource {
             cell.selectionStyle = .none
             
         case .logout:
-            // Style logout cell differently
             content.textProperties.color = .systemRed
             cell.contentConfiguration = content
             cell.accessoryType = .none
