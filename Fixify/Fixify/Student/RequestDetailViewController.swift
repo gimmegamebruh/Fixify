@@ -29,6 +29,9 @@ final class RequestDetailViewController: UIViewController {
     private let cancelButton = UIFactory.secondaryButton(title: "Cancel")
     private let rateButton = UIFactory.primaryButton(title: "Rate")
 
+    // ✅ ADDED (safe)
+    private let chatButton = UIFactory.secondaryButton(title: "Chat")
+
     private let buttonStack = UIStackView()
 
     // MARK: - Init
@@ -49,14 +52,15 @@ final class RequestDetailViewController: UIViewController {
 
         setupLayout()
         loadData()
+
+        chatButton.addTarget(self, action: #selector(chatTapped), for: .touchUpInside)
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(refresh),
             name: .technicianRequestsDidChange,
             object: nil
         )
-
-        
     }
 
     // MARK: - Layout
@@ -210,6 +214,10 @@ final class RequestDetailViewController: UIViewController {
                 buttonStack.addArrangedSubview(rateButton)
             }
 
+        case .active:
+            // ✅ Chat allowed while active
+            buttonStack.addArrangedSubview(chatButton)
+
         default:
             break
         }
@@ -230,13 +238,18 @@ final class RequestDetailViewController: UIViewController {
         let vc = RatingViewController(requestID: requestID)
         present(vc, animated: true)
     }
-    
+
+    // ✅ ADDED
+    @objc private func chatTapped() {
+        let vc = ChatViewController(requestID: requestID)
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
     @objc private func refresh() {
         loadData()
     }
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-
 }
-

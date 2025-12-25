@@ -15,6 +15,9 @@ final class TechnicianRequestDetailViewController: UIViewController {
     private let assignButton = UIButton(type: .system)
     private let scheduleButton = UIButton(type: .system)
 
+    // ✅ ADDED (no logic change)
+    private let chatButton = UIButton(type: .system)
+
     init(request: Request) {
         self.request = request
         super.init(nibName: nil, bundle: nil)
@@ -69,11 +72,20 @@ final class TechnicianRequestDetailViewController: UIViewController {
         scheduleButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
         scheduleButton.addTarget(self, action: #selector(scheduleJob), for: .touchUpInside)
 
+        // ✅ ADDED CHAT BUTTON (style matches existing buttons)
+        chatButton.setTitle("Open Chat", for: .normal)
+        chatButton.backgroundColor = .systemPurple
+        chatButton.tintColor = .white
+        chatButton.layer.cornerRadius = 10
+        chatButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        chatButton.addTarget(self, action: #selector(openChat), for: .touchUpInside)
+
         let actions = UIStackView(arrangedSubviews: [
             assignButton,
             scheduleButton,
             makeActionButton(title: "Mark In Progress", color: .systemBlue, selector: #selector(markActive)),
-            makeActionButton(title: "Mark Completed", color: .systemGreen, selector: #selector(markCompleted))
+            makeActionButton(title: "Mark Completed", color: .systemGreen, selector: #selector(markCompleted)),
+            chatButton // ✅ ADDED (no existing buttons touched)
         ])
         actions.axis = .vertical
         actions.spacing = 10
@@ -201,6 +213,12 @@ final class TechnicianRequestDetailViewController: UIViewController {
         store.updateStatus(id: request.id, status: status)
         NotificationCenter.default.post(name: .technicianRequestsDidChange, object: nil)
         showAlert(title: "Status Updated", message: "Request marked as \(status.rawValue).")
+    }
+
+    // ✅ ADDED CHAT NAVIGATION (no logic change elsewhere)
+    @objc private func openChat() {
+        let chatVC = ChatViewController(requestID: request.id)
+        navigationController?.pushViewController(chatVC, animated: true)
     }
 
     private func showAlert(title: String, message: String) {
