@@ -3,10 +3,11 @@ import Foundation
 final class AssignTechnicianViewModel {
 
     private let technicianService: TechnicianServicing
-    private let store = RequestStore.shared
-    private let requestID: String
+    private let requestStore = RequestStore.shared
 
     private(set) var technicians: [Technician] = []
+    private let requestID: String
+    private var currentRequest: Request?
 
     init(
         requestID: String,
@@ -16,22 +17,14 @@ final class AssignTechnicianViewModel {
         self.technicianService = technicianService
     }
 
-    // MARK: - Load (with completion so VC can reload)
-    func load(completion: @escaping () -> Void) {
-
+    func load() {
         technicianService.fetchAll { [weak self] techs in
-            guard let self else { return }
-            self.technicians = techs
-
-            DispatchQueue.main.async {
-                completion()
-            }
+            self?.technicians = techs
         }
-    }
 
-    // Always fetch the latest request from the store
-    private func currentRequest() -> Request? {
-        store.requests.first(where: { $0.id == requestID })
+        currentRequest = requestStore.requests.first {
+            $0.id == requestID
+        }
     }
 
     func technician(at index: Int) -> Technician {
@@ -39,25 +32,30 @@ final class AssignTechnicianViewModel {
     }
 
     func isCurrentlyAssigned(_ technician: Technician) -> Bool {
-        currentRequest()?.assignedTechnicianID == technician.id
+        currentRequest?.assignedTechnicianID == technician.id
     }
 
-    // MARK: - Assign (🔥 GUARANTEED)
-    func assignTechnician(_ technician: Technician, completion: @escaping (Bool) -> Void) {
-
-        guard var request = currentRequest() else {
-            print("❌ Assign failed: Request not found in store for id:", requestID)
+    // 🔥 CORE LOGIC
+    func assignTechnician(
+        _ technician: Technician,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard var request = currentRequest else {
             completion(false)
             return
         }
 
-        print("✅ Tapped assign for tech:", technician.id, "on request:", request.id)
+        guard request.status.canAssignTechnician else {
+            completion(false)
+            return
+        }
 
         request.assignedTechnicianID = technician.id
-        request.status = .active   // ✅ MUST become active
 
-        store.updateRequest(request)
+        // ✅ ALWAYS MOVE TO ASSIGNED (NOT ACTIVE)
+        request.status = .assigned
 
+        RequestStore.shared.updateRequest(request)
         completion(true)
     }
 }

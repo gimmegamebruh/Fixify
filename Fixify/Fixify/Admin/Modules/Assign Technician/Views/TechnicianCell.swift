@@ -5,87 +5,123 @@ final class TechnicianCell: UITableViewCell {
     static let identifier = "TechnicianCell"
     var onAssignTapped: (() -> Void)?
 
+    // MARK: - UI
+
     private let card = UIView()
+
     private let nameLabel = UILabel()
+    private let roleLabel = UILabel()
     private let jobsLabel = UILabel()
+
     private let assignButton = UIButton(type: .system)
+
+    // MARK: - Init
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - UI Setup
 
     private func setupUI() {
 
         selectionStyle = .none
         backgroundColor = .clear
-        contentView.isUserInteractionEnabled = true
+        contentView.backgroundColor = .clear
 
+        // Card
         card.dsCard()
         card.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(card)
 
+        // Labels
         nameLabel.font = DS.Font.section()
-        jobsLabel.font = DS.Font.body()
+        nameLabel.textColor = DS.Color.text
+
+        roleLabel.font = DS.Font.caption()
+        roleLabel.textColor = DS.Color.subtext
+
+        jobsLabel.font = DS.Font.caption()
         jobsLabel.textColor = DS.Color.subtext
 
-        // button style
+        // Assign Button (Figma style)
         assignButton.setTitle("Assign", for: .normal)
-        assignButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        assignButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         assignButton.backgroundColor = DS.Color.primary
         assignButton.tintColor = .white
-        assignButton.layer.cornerRadius = 18
-        assignButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            assignButton.heightAnchor.constraint(equalToConstant: 36),
-            assignButton.widthAnchor.constraint(equalToConstant: 110)
-        ])
+        assignButton.layer.cornerRadius = 12
+        assignButton.contentEdgeInsets = UIEdgeInsets(
+            top: 8,
+            left: 20,
+            bottom: 8,
+            right: 20
+        )
 
-        // 🔥 UIAction guarantees taps
         assignButton.addAction(UIAction { [weak self] _ in
-            print("✅ Assign button tapped in TechnicianCell")
             self?.onAssignTapped?()
         }, for: .touchUpInside)
 
-        let stack = UIStackView(arrangedSubviews: [nameLabel, jobsLabel, assignButton])
-        stack.axis = .vertical
-        stack.spacing = 10
-        stack.alignment = .leading
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        // Left stack (text)
+        let textStack = UIStackView(arrangedSubviews: [
+            nameLabel,
+            roleLabel,
+            jobsLabel
+        ])
+        textStack.axis = .vertical
+        textStack.spacing = 6
+        textStack.alignment = .leading
 
-        card.addSubview(stack)
+        // Main horizontal layout
+        let hStack = UIStackView(arrangedSubviews: [
+            textStack,
+            assignButton
+        ])
+        hStack.axis = .horizontal
+        hStack.alignment = .center
+        hStack.spacing = 12
+        hStack.translatesAutoresizingMaskIntoConstraints = false
+
+        card.addSubview(hStack)
 
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+            // Card
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
-            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
+            // Content
+            hStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            hStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            hStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            hStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
         ])
     }
+
+    // MARK: - Configure
 
     func configure(with technician: Technician, isCurrentlyAssigned: Bool) {
 
         nameLabel.text = technician.name
+        roleLabel.text = technician.specialization
         jobsLabel.text = "Active jobs: \(technician.activeJobs)"
 
         if isCurrentlyAssigned {
             assignButton.setTitle("Assigned", for: .normal)
-            assignButton.backgroundColor = DS.Color.secondaryBg
-            assignButton.setTitleColor(DS.Color.primary, for: .normal)
             assignButton.isEnabled = false
+            assignButton.backgroundColor = DS.Color.secondaryBg
+            assignButton.tintColor = DS.Color.subtext
             assignButton.alpha = 0.7
         } else {
             assignButton.setTitle("Assign", for: .normal)
-            assignButton.backgroundColor = DS.Color.primary
-            assignButton.setTitleColor(.white, for: .normal)
             assignButton.isEnabled = true
+            assignButton.backgroundColor = DS.Color.primary
+            assignButton.tintColor = .white
             assignButton.alpha = 1.0
         }
     }

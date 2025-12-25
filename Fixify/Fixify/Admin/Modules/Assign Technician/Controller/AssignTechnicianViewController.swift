@@ -10,7 +10,11 @@ final class AssignTechnicianViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) not implemented")
+    }
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,14 +24,20 @@ final class AssignTechnicianViewController: UIViewController {
 
         setupTableView()
 
-        // 🔥 load + reload table
-        viewModel.load { [weak self] in
-            self?.tableView.reloadData()
-        }
+        // ✅ LOAD DATA (NO CLOSURE)
+        viewModel.load()
+        tableView.reloadData()
     }
 
+    // MARK: - Table Setup
+
     private func setupTableView() {
-        tableView.register(TechnicianCell.self, forCellReuseIdentifier: TechnicianCell.identifier)
+
+        tableView.register(
+            TechnicianCell.self,
+            forCellReuseIdentifier: TechnicianCell.identifier
+        )
+
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
@@ -43,43 +53,59 @@ final class AssignTechnicianViewController: UIViewController {
         ])
     }
 
+    // MARK: - Error
+
     private func showError(_ msg: String) {
-        let a = UIAlertController(title: "Error", message: msg, preferredStyle: .alert)
-        a.addAction(UIAlertAction(title: "OK", style: .default))
-        present(a, animated: true)
+        let alert = UIAlertController(
+            title: "Error",
+            message: msg,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }
 
+// MARK: - UITableViewDataSource
+
 extension AssignTechnicianViewController: UITableViewDataSource {
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
         viewModel.technicians.count
     }
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(
             withIdentifier: TechnicianCell.identifier,
             for: indexPath
         ) as! TechnicianCell
 
-        let tech = viewModel.technician(at: indexPath.row)
+        let technician = viewModel.technician(at: indexPath.row)
 
         cell.configure(
-            with: tech,
-            isCurrentlyAssigned: viewModel.isCurrentlyAssigned(tech)
+            with: technician,
+            isCurrentlyAssigned: viewModel.isCurrentlyAssigned(technician)
         )
 
-        // 🔥 closure must be set every time
+        // ✅ ASSIGN / REASSIGN
         cell.onAssignTapped = { [weak self] in
             guard let self else { return }
 
-            self.viewModel.assignTechnician(tech) { success in
+            self.viewModel.assignTechnician(technician) { success in
                 DispatchQueue.main.async {
                     if success {
                         self.navigationController?.popViewController(animated: true)
                     } else {
-                        self.showError("Technician could not be assigned. Request not found.")
+                        self.showError(
+                            "Technician could not be assigned. Request may be locked."
+                        )
                     }
                 }
             }

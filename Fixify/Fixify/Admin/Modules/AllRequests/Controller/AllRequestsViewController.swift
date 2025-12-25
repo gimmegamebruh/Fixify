@@ -7,12 +7,16 @@ import UIKit
 
 final class AllRequestsViewController: UIViewController {
 
-    private let viewModel = AllRequestsViewModel()
+    // MARK: - Properties
+
+    private let store = RequestStore.shared
     private var displayedRequests: [Request] = []
 
     private let tableView = UITableView()
     private let filterButton = UIButton(type: .system)
     private var dropdown: FilterDropdownView?
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,7 +27,7 @@ final class AllRequestsViewController: UIViewController {
         setupFilterButton()
         setupTableView()
 
-        // 🔥 Listen to Firebase live updates
+        // 🔥 Listen to live updates from RequestStore
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(dataDidChange),
@@ -38,14 +42,14 @@ final class AllRequestsViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Firebase Updates
+    // MARK: - Data Handling
 
     @objc private func dataDidChange() {
         applyDefaultData()
     }
 
     private func applyDefaultData() {
-        displayedRequests = viewModel.allRequests
+        displayedRequests = store.requests
         tableView.reloadData()
     }
 
@@ -56,6 +60,7 @@ final class AllRequestsViewController: UIViewController {
             UIImage(systemName: "line.3.horizontal.decrease"),
             for: .normal
         )
+
         filterButton.addTarget(
             self,
             action: #selector(toggleDropdown),
@@ -67,6 +72,7 @@ final class AllRequestsViewController: UIViewController {
     }
 
     @objc private func toggleDropdown() {
+
         if let dropdown {
             dropdown.removeFromSuperview()
             self.dropdown = nil
@@ -78,7 +84,27 @@ final class AllRequestsViewController: UIViewController {
 
         dropdown.onSelectFilter = { [weak self] filter in
             guard let self else { return }
-            self.displayedRequests = self.viewModel.filtered(filter)
+
+            switch filter {
+            case .lastWeek:
+                self.displayedRequests = self.store.requests.filter {
+                    $0.dateCreated.isWithinLastWeek
+                }
+
+            case .lastMonth:
+                self.displayedRequests = self.store.requests.filter {
+                    $0.dateCreated.isWithinLastMonth
+                }
+
+            case .lastYear:
+                self.displayedRequests = self.store.requests.filter {
+                    $0.dateCreated.isWithinLastYear
+                }
+
+            case .allTime:
+                self.displayedRequests = self.store.requests
+            }
+
             self.tableView.reloadData()
             dropdown.removeFromSuperview()
             self.dropdown = nil
@@ -100,13 +126,15 @@ final class AllRequestsViewController: UIViewController {
         ])
     }
 
-    // MARK: - TableView
+    // MARK: - Table View
 
     private func setupTableView() {
+
         tableView.register(
             RequestCell.self,
             forCellReuseIdentifier: RequestCell.identifier
         )
+
         tableView.dataSource = self
         tableView.separatorStyle = .none
         tableView.backgroundColor = .clear
@@ -155,16 +183,12 @@ extension AllRequestsViewController: UITableViewDataSource {
         let request = displayedRequests[indexPath.row]
         cell.configure(with: request)
 
+        // 🔥 ASSIGN / REASSIGN RULE
         cell.onAssignTap = { [weak self] in
-            guard let self else { return }
-
-            // 🔒 Business rule
-            guard request.status == .pending || request.status == .escalated else {
-                return
-            }
+            guard request.status.canAssignTechnician else { return }
 
             let vc = AssignTechnicianViewController(requestID: request.id)
-            self.navigationController?.pushViewController(vc, animated: true)
+            self?.navigationController?.pushViewController(vc, animated: true)
         }
 
         return cell
