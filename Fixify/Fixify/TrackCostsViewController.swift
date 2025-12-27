@@ -1,6 +1,6 @@
 import UIKit
 
-final class UpdateQuantitiesViewController: UIViewController {
+final class TrackCostsViewController: UIViewController {
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -78,7 +78,7 @@ final class UpdateQuantitiesViewController: UIViewController {
         
         // Title
         let titleLabel = UILabel()
-        titleLabel.text = "Update Quantities"
+        titleLabel.text = "Track Costs"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
         titleLabel.textColor = dynamicTextColor()
         titleLabel.textAlignment = .center
@@ -153,9 +153,9 @@ final class UpdateQuantitiesViewController: UIViewController {
             return
         }
         
-        // Navigate to the edit quantity page
-        let editQuantityVC = EditQuantityViewController(productCode: code)
-        navigationController?.pushViewController(editQuantityVC, animated: true)
+        // Navigate to the cost details page
+        let costDetailsVC = CostDetailsViewController(productCode: code)
+        navigationController?.pushViewController(costDetailsVC, animated: true)
     }
     
     private func showAlert(message: String) {

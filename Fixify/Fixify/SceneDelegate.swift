@@ -20,7 +20,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window = UIWindow(frame: windowScene.coordinateSpace.bounds)
         window?.windowScene = windowScene
-        let InvVC = InventorymainViewController()
+        let InvVC = InventoryManagmentViewController()
         let navigationController = UINavigationController(rootViewController: InvVC)
 
         let isDarkMode = UserDefaults.standard.bool(forKey: "isDarkModeEnabled")

@@ -1,6 +1,6 @@
 import UIKit
 
-final class InventorymainViewController: UIViewController {
+final class InventoryManagmentViewController: UIViewController {
     
     private let iconImageView: UIImageView = {
         let imageView = UIImageView()
@@ -172,17 +172,17 @@ final class InventorymainViewController: UIViewController {
     
     @objc private func viewStockTapped() {
         let viewStockVC = ViewStockViewController()
-                navigationController?.pushViewController(viewStockVC, animated: true)
+        navigationController?.pushViewController(viewStockVC, animated: true)
     }
     
     @objc private func manageStockTapped() {
         let manageStockVC = ManageStockViewController()
-               navigationController?.pushViewController(manageStockVC, animated: true)
+        navigationController?.pushViewController(manageStockVC, animated: true)
     }
     
     @objc private func trackCostsTapped() {
-        print("Track Costs tapped")
-        // Navigate to track costs screen
+        let trackCostsVC = TrackCostsViewController()
+        navigationController?.pushViewController(trackCostsVC, animated: true)
     }
     
     // MARK: - Dynamic Colors
