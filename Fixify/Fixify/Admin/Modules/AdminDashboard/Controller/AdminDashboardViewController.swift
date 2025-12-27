@@ -104,6 +104,11 @@ final class AdminDashboardViewController: UIViewController {
 
         let addTech = primaryButton("Add New Technician")
         let inventory = primaryButton("Manage Inventory")
+        inventory.addTarget(
+            self,
+            action: #selector(manageInventoryTapped),
+            for: .touchUpInside
+        )
 
         let metrics = primaryButton("View Technician Metrics")
         metrics.addTarget(
@@ -186,7 +191,11 @@ final class AdminDashboardViewController: UIViewController {
     }
 
     // MARK: - Actions
-
+    @objc private func manageInventoryTapped() {
+        let invvc = InventoryManagmentViewController()
+        navigationController?.pushViewController(invvc, animated: true)
+    }
+    
     @objc private func viewAllTapped() {
         let vc = EscalatedRequestsViewController()
         navigationController?.pushViewController(vc, animated: true)
