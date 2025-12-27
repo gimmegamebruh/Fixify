@@ -9,7 +9,7 @@ final class EditProfileViewController: UIViewController {
     private let db = Firestore.firestore()
     private var selectedImage: UIImage?
     private var shouldRemovePhoto = false
-    private var hadProfileImage = false // Track if user had a photo when view loaded
+    private var currentImageURL: String? // Track current Firebase image URL
     
     private let scrollView: UIScrollView = {
         let sv = UIScrollView()
@@ -309,12 +309,12 @@ final class EditProfileViewController: UIViewController {
                     // Load profile image if URL exists, otherwise keep default
                     if let imageURL = data?["profileImageURL"] as? String, !imageURL.isEmpty {
                         self.loadProfileImage(from: imageURL)
-                        self.hadProfileImage = true
+                        self.currentImageURL = imageURL // Store the current URL
                     } else {
                         // No image in Firebase - set to default
                         self.profileImageView.image = UIImage(systemName: "person.crop.circle")
                         self.profileImageView.tintColor = .systemGray3
-                        self.hadProfileImage = false
+                        self.currentImageURL = nil
                     }
                 }
             }
@@ -358,13 +358,19 @@ final class EditProfileViewController: UIViewController {
             return
         }
         
-        // Check if profile image is set
-        let isDefaultImage = profileImageView.image == UIImage(systemName: "person.crop.circle")
+        // Check if user has a valid profile image
+        let hasCurrentImage = currentImageURL != nil
+        let hasSelectedNewImage = selectedImage != nil
+        let isRemovingImage = shouldRemovePhoto
         
-        // User must have either: a new image selected, an existing image, or explicitly removing their photo
-        let hasNoImage = isDefaultImage && selectedImage == nil && !hadProfileImage && !shouldRemovePhoto
+        // If removing image and no new image selected, show error
+        if isRemovingImage && !hasSelectedNewImage {
+            showAlert(message: "Please select a profile picture")
+            return
+        }
         
-        if hasNoImage || (shouldRemovePhoto && !hadProfileImage) {
+        // If no current image and no new image selected, show error
+        if !hasCurrentImage && !hasSelectedNewImage {
             showAlert(message: "Please select a profile picture")
             return
         }
@@ -388,19 +394,15 @@ final class EditProfileViewController: UIViewController {
         view.addSubview(loadingView)
         confirmButton.isEnabled = false
         
-        // Check if user wants to remove photo
-        if shouldRemovePhoto {
-            // Remove photo from Firebase
-            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, removePhoto: true)
-        } else if let image = selectedImage {
-            // Upload new image
+        // Handle image upload if new image selected
+        if let image = selectedImage {
             uploadImageToCloudinary(image) { [weak self] imageURL in
                 guard let self = self else { return }
-                self.saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: imageURL, removePhoto: false)
+                self.saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: imageURL)
             }
         } else {
-            // Save without updating image
-            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil, removePhoto: false)
+            // Save without updating image (keeping existing image)
+            saveUserData(userID: userID, contact: contact, address: address, emergency: emergency, imageURL: nil)
         }
     }
     
@@ -410,7 +412,7 @@ final class EditProfileViewController: UIViewController {
         }
     }
     
-    private func saveUserData(userID: String, contact: String, address: String, emergency: String, imageURL: String?, removePhoto: Bool) {
+    private func saveUserData(userID: String, contact: String, address: String, emergency: String, imageURL: String?) {
         var userData: [String: Any] = [
             "contactNumber": contact,
             "address": address,
@@ -418,10 +420,8 @@ final class EditProfileViewController: UIViewController {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         
-        // Handle photo removal or update
-        if removePhoto {
-            userData["profileImageURL"] = FieldValue.delete()
-        } else if let imageURL = imageURL {
+        // Only update image URL if a new image was uploaded
+        if let imageURL = imageURL {
             userData["profileImageURL"] = imageURL
         }
         
@@ -459,7 +459,9 @@ final class EditProfileViewController: UIViewController {
             self.openPhotoLibrary()
         }))
         
-        if profileImageView.image != UIImage(systemName: "person.crop.circle") {
+        // Only show remove option if there's actually an image to remove
+        let hasImage = currentImageURL != nil || selectedImage != nil
+        if hasImage && !shouldRemovePhoto {
             alert.addAction(UIAlertAction(title: "Remove Photo", style: .destructive) { [weak self] _ in
                 self?.removeProfilePhoto()
             })
@@ -479,12 +481,12 @@ final class EditProfileViewController: UIViewController {
     private func removeProfilePhoto() {
         let alert = UIAlertController(
             title: "Remove Photo",
-            message: "This will remove your profile photo when you save.",
+            message: "You must select a new photo to replace the current one.",
             preferredStyle: .alert
         )
         
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Remove", style: .destructive) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: "Select New Photo", style: .default) { [weak self] _ in
             guard let self = self else { return }
             
             // Reset to default image
@@ -492,6 +494,9 @@ final class EditProfileViewController: UIViewController {
             self.profileImageView.tintColor = .systemGray3
             self.selectedImage = nil
             self.shouldRemovePhoto = true
+            
+            // Show photo picker immediately
+            self.openPhotoLibrary()
         })
         
         present(alert, animated: true)
@@ -562,11 +567,11 @@ extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigati
         if let editedImage = info[.editedImage] as? UIImage {
             selectedImage = editedImage
             profileImageView.image = editedImage
-            shouldRemovePhoto = false
+            shouldRemovePhoto = false // Reset flag when new image selected
         } else if let originalImage = info[.originalImage] as? UIImage {
             selectedImage = originalImage
             profileImageView.image = originalImage
-            shouldRemovePhoto = false
+            shouldRemovePhoto = false // Reset flag when new image selected
         }
         
         picker.dismiss(animated: true)
@@ -574,5 +579,20 @@ extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigati
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true)
+        
+        // If user cancelled after clicking remove photo, restore the original image
+        if shouldRemovePhoto {
+            if let currentURL = currentImageURL {
+                // Restore the original image from URL
+                loadProfileImage(from: currentURL)
+            } else {
+                // If there was no image originally, keep the default icon
+                self.profileImageView.image = UIImage(systemName: "person.crop.circle")
+                self.profileImageView.tintColor = .systemGray3
+            }
+            // Reset the flag since they cancelled
+            shouldRemovePhoto = false
+            selectedImage = nil
+        }
     }
 }
