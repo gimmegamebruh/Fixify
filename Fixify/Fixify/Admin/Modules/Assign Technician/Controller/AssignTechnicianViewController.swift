@@ -24,9 +24,15 @@ final class AssignTechnicianViewController: UIViewController {
 
         setupTableView()
 
-        // ✅ LOAD DATA (NO CLOSURE)
+        // ✅ Bind reload callback
+        viewModel.onUpdate = { [weak self] in
+            DispatchQueue.main.async {
+                self?.tableView.reloadData()
+            }
+        }
+
+        // ✅ Load data
         viewModel.load()
-        tableView.reloadData()
     }
 
     // MARK: - Table Setup
@@ -94,7 +100,6 @@ extension AssignTechnicianViewController: UITableViewDataSource {
             isCurrentlyAssigned: viewModel.isCurrentlyAssigned(technician)
         )
 
-        // ✅ ASSIGN / REASSIGN
         cell.onAssignTapped = { [weak self] in
             guard let self else { return }
 

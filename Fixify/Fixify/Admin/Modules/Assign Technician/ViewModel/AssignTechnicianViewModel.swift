@@ -9,23 +9,42 @@ final class AssignTechnicianViewModel {
     private let requestID: String
     private var currentRequest: Request?
 
+    // Notify VC when async data arrives
+    var onUpdate: (() -> Void)?
+
     init(
         requestID: String,
-        technicianService: TechnicianServicing = LocalTechnicianService.shared
+        technicianService: TechnicianServicing = FirebaseTechnicianService.shared
     ) {
         self.requestID = requestID
         self.technicianService = technicianService
     }
 
-    func load() {
-        technicianService.fetchAll { [weak self] techs in
-            self?.technicians = techs
-        }
+    // MARK: - Load
 
+    func load() {
+
+        // Get current request
         currentRequest = requestStore.requests.first {
             $0.id == requestID
         }
+
+        // Fetch technicians from Firebase
+        technicianService.fetchAll { [weak self] techs in
+            guard let self else { return }
+
+            // 🔥 Inject job count dynamically (ASSIGNED + ACTIVE)
+            self.technicians = techs.map { technician in
+                var tech = technician
+                tech.activeJobs = self.jobCount(for: technician.id)
+                return tech
+            }
+
+            self.onUpdate?()
+        }
     }
+
+    // MARK: - Helpers
 
     func technician(at index: Int) -> Technician {
         technicians[index]
@@ -35,7 +54,16 @@ final class AssignTechnicianViewModel {
         currentRequest?.assignedTechnicianID == technician.id
     }
 
-    // 🔥 CORE LOGIC
+    /// Counts jobs that are either assigned OR active
+    private func jobCount(for technicianID: String) -> Int {
+        requestStore.requests.filter {
+            $0.assignedTechnicianID == technicianID &&
+            ($0.status == .assigned || $0.status == .active)
+        }.count
+    }
+
+    // MARK: - Assignment
+
     func assignTechnician(
         _ technician: Technician,
         completion: @escaping (Bool) -> Void
@@ -51,8 +79,6 @@ final class AssignTechnicianViewModel {
         }
 
         request.assignedTechnicianID = technician.id
-
-        // ✅ ALWAYS MOVE TO ASSIGNED (NOT ACTIVE)
         request.status = .assigned
 
         RequestStore.shared.updateRequest(request)

@@ -1,15 +1,10 @@
-//
-//  EscalationDetailViewController.swift
-//  Fixify
-//
-
 import UIKit
 
 final class EscalationDetailViewController: UIViewController {
 
     // MARK: - Dependencies
     private let requestStore = RequestStore.shared
-    private let technicianService = LocalTechnicianService.shared   // TEMP OK
+    private let technicianService = FirebaseTechnicianService.shared
 
     // MARK: - State
     private var request: Request
@@ -140,7 +135,6 @@ final class EscalationDetailViewController: UIViewController {
         updated.priority = priority
         updated.status = .pending
 
-        // 🔥 Firebase update
         requestStore.updateRequest(updated)
         request = updated
 
@@ -163,23 +157,32 @@ final class EscalationDetailViewController: UIViewController {
 
     private func refreshInfo() {
 
-        let technicianName: String
-
-        if let techID = request.assignedTechnicianID,
-           let name = technicianService.name(for: techID) {
-            technicianName = name
-        } else {
-            technicianName = "Unassigned"
-        }
-
         infoLabel.text = """
         \(request.title) – \(request.location)
-        Technician: \(technicianName)
+        Technician: Loading...
         """
 
         statusLabel.text = request.status == .escalated
             ? "ESCALATED"
             : request.status.rawValue.uppercased()
+
+        guard let techID = request.assignedTechnicianID else {
+            updateTechnicianName("Unassigned")
+            return
+        }
+
+        technicianService.name(for: techID) { [weak self] name in
+            DispatchQueue.main.async {
+                self?.updateTechnicianName(name ?? "Unknown")
+            }
+        }
+    }
+
+    private func updateTechnicianName(_ name: String) {
+        infoLabel.text = """
+        \(request.title) – \(request.location)
+        Technician: \(name)
+        """
     }
 
     private func makePicker() -> UIPickerView {

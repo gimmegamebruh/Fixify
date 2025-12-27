@@ -5,17 +5,11 @@ final class TechnicianCell: UITableViewCell {
     static let identifier = "TechnicianCell"
     var onAssignTapped: (() -> Void)?
 
-    // MARK: - UI
-
     private let card = UIView()
-
     private let nameLabel = UILabel()
     private let roleLabel = UILabel()
     private let jobsLabel = UILabel()
-
     private let assignButton = UIButton(type: .system)
-
-    // MARK: - Init
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -26,20 +20,16 @@ final class TechnicianCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - UI Setup
-
     private func setupUI() {
 
         selectionStyle = .none
         backgroundColor = .clear
         contentView.backgroundColor = .clear
 
-        // Card
         card.dsCard()
         card.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(card)
 
-        // Labels
         nameLabel.font = DS.Font.section()
         nameLabel.textColor = DS.Color.text
 
@@ -49,24 +39,19 @@ final class TechnicianCell: UITableViewCell {
         jobsLabel.font = DS.Font.caption()
         jobsLabel.textColor = DS.Color.subtext
 
-        // Assign Button (Figma style)
         assignButton.setTitle("Assign", for: .normal)
         assignButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         assignButton.backgroundColor = DS.Color.primary
         assignButton.tintColor = .white
         assignButton.layer.cornerRadius = 12
         assignButton.contentEdgeInsets = UIEdgeInsets(
-            top: 8,
-            left: 20,
-            bottom: 8,
-            right: 20
+            top: 8, left: 20, bottom: 8, right: 20
         )
 
         assignButton.addAction(UIAction { [weak self] _ in
             self?.onAssignTapped?()
         }, for: .touchUpInside)
 
-        // Left stack (text)
         let textStack = UIStackView(arrangedSubviews: [
             nameLabel,
             roleLabel,
@@ -76,7 +61,6 @@ final class TechnicianCell: UITableViewCell {
         textStack.spacing = 6
         textStack.alignment = .leading
 
-        // Main horizontal layout
         let hStack = UIStackView(arrangedSubviews: [
             textStack,
             assignButton
@@ -89,21 +73,17 @@ final class TechnicianCell: UITableViewCell {
         card.addSubview(hStack)
 
         NSLayoutConstraint.activate([
-            // Card
             card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            // Content
             hStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             hStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
             hStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             hStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
         ])
     }
-
-    // MARK: - Configure
 
     func configure(with technician: Technician, isCurrentlyAssigned: Bool) {
 
