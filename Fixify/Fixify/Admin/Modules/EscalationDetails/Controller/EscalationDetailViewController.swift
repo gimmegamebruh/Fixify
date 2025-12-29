@@ -133,7 +133,7 @@ final class EscalationDetailViewController: UIViewController {
 
         var updated = request
         updated.priority = priority
-        updated.status = .pending
+        updated.status = .assigned
 
         requestStore.updateRequest(updated)
         request = updated

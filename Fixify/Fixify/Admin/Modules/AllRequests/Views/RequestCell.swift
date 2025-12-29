@@ -171,6 +171,15 @@ final class RequestCell: UITableViewCell {
             }.resume()
         }
     }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+
+        statusBadge.text = nil
+        statusBadge.backgroundColor = .clear
+        photoView.image = nil
+    }
+
 
     // MARK: - Actions
 

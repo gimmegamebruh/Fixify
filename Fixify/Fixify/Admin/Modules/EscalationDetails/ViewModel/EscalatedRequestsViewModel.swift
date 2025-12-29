@@ -11,7 +11,7 @@ final class EscalatedRequestsViewModel {
         }
     }
 
-    func type(for request: Request) -> EscalationFilter {
+    func type(for request: Request) -> EscalationFilter? {
 
         let daysOld = Calendar.current.dateComponents(
             [.day],
@@ -27,7 +27,7 @@ final class EscalatedRequestsViewModel {
             return .urgent
         }
 
-        return .all
+        return nil
     }
 
     func filtered(by filter: EscalationFilter) -> [Request] {
@@ -35,17 +35,9 @@ final class EscalatedRequestsViewModel {
         case .all:
             return escalatedRequests
         case .overdue:
-            return escalatedRequests.filter {
-                Calendar.current.dateComponents(
-                    [.day],
-                    from: $0.dateCreated,
-                    to: Date()
-                ).day ?? 0 > 5
-            }
+            return escalatedRequests.filter { type(for: $0) == .overdue }
         case .urgent:
-            return escalatedRequests.filter {
-                $0.priority == .high || $0.priority == .urgent
-            }
+            return escalatedRequests.filter { type(for: $0) == .urgent }
         }
     }
 }

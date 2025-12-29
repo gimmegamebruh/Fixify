@@ -9,7 +9,6 @@ final class AssignTechnicianViewModel {
     private let requestID: String
     private var currentRequest: Request?
 
-    // Notify VC when async data arrives
     var onUpdate: (() -> Void)?
 
     init(
@@ -24,16 +23,13 @@ final class AssignTechnicianViewModel {
 
     func load() {
 
-        // Get current request
         currentRequest = requestStore.requests.first {
             $0.id == requestID
         }
 
-        // Fetch technicians from Firebase
         technicianService.fetchAll { [weak self] techs in
             guard let self else { return }
 
-            // 🔥 Inject job count dynamically (ASSIGNED + ACTIVE)
             self.technicians = techs.map { technician in
                 var tech = technician
                 tech.activeJobs = self.jobCount(for: technician.id)
@@ -54,7 +50,6 @@ final class AssignTechnicianViewModel {
         currentRequest?.assignedTechnicianID == technician.id
     }
 
-    /// Counts jobs that are either assigned OR active
     private func jobCount(for technicianID: String) -> Int {
         requestStore.requests.filter {
             $0.assignedTechnicianID == technicianID &&
@@ -62,7 +57,7 @@ final class AssignTechnicianViewModel {
         }.count
     }
 
-    // MARK: - Assignment
+    // MARK: - Assignment (🔥 FIXED)
 
     func assignTechnician(
         _ technician: Technician,
@@ -73,15 +68,15 @@ final class AssignTechnicianViewModel {
             return
         }
 
-        guard request.status.canAssignTechnician else {
-            completion(false)
-            return
-        }
-
         request.assignedTechnicianID = technician.id
         request.status = .assigned
 
-        RequestStore.shared.updateRequest(request)
+        // 🔥 IMPORTANT: keep local reference in sync
+        currentRequest = request
+
+        // 🔥 Optimistic update
+        requestStore.updateRequest(request)
+
         completion(true)
     }
 }

@@ -88,10 +88,9 @@ extension EscalatedRequestsViewController: UITableViewDataSource {
 
         let request = displayed[indexPath.row]
 
-        // ✅ This now works because ViewModel has type(for:)
         cell.configure(
             with: request,
-            escalationType: currentFilter == .all
+            type: currentFilter == .all
                 ? viewModel.type(for: request)
                 : currentFilter
         )
