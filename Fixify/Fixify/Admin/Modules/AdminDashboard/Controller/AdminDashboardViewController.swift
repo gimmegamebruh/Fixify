@@ -12,7 +12,6 @@ final class AdminDashboardViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
-    // 🔹 Keep references so we can update dynamically
     private let cardsStack = UIStackView()
     private let escalatedCountLabel = UILabel()
 
@@ -25,7 +24,6 @@ final class AdminDashboardViewController: UIViewController {
         setupScroll()
         setupUI()
 
-        // 🔥 LISTEN TO FIREBASE CHANGES
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(dataDidChange),
@@ -38,7 +36,7 @@ final class AdminDashboardViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Firebase Updates
+    // MARK: - Updates
 
     @objc private func dataDidChange() {
         DispatchQueue.main.async {
@@ -103,6 +101,7 @@ final class AdminDashboardViewController: UIViewController {
         statsGrid.spacing = 16
 
         let addTech = primaryButton("Add New Technician")
+
         let inventory = primaryButton("Manage Inventory")
         inventory.addTarget(
             self,
@@ -117,6 +116,14 @@ final class AdminDashboardViewController: UIViewController {
             for: .touchUpInside
         )
 
+        // 🔥 NEW FEATURE BUTTON
+        let issuePatterns = primaryButton("Issue Pattern Analytics")
+        issuePatterns.addTarget(
+            self,
+            action: #selector(viewIssuePatternsTapped),
+            for: .touchUpInside
+        )
+
         let header = escalatedSectionHeader()
 
         cardsStack.axis = .vertical
@@ -127,6 +134,7 @@ final class AdminDashboardViewController: UIViewController {
             addTech,
             inventory,
             metrics,
+            issuePatterns,   // ✅ NEW
             header,
             cardsStack
         ])
@@ -191,11 +199,12 @@ final class AdminDashboardViewController: UIViewController {
     }
 
     // MARK: - Actions
+
     @objc private func manageInventoryTapped() {
         let invvc = InventoryManagmentViewController()
         navigationController?.pushViewController(invvc, animated: true)
     }
-    
+
     @objc private func viewAllTapped() {
         let vc = EscalatedRequestsViewController()
         navigationController?.pushViewController(vc, animated: true)
@@ -203,6 +212,12 @@ final class AdminDashboardViewController: UIViewController {
 
     @objc private func viewTechnicianMetricsTapped() {
         let vc = TechnicianMetricsViewController()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    // 🔥 NEW
+    @objc private func viewIssuePatternsTapped() {
+        let vc = IssuePatternViewController()
         navigationController?.pushViewController(vc, animated: true)
     }
 
