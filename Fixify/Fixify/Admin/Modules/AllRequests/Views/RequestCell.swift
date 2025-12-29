@@ -3,7 +3,9 @@ import UIKit
 final class RequestCell: UITableViewCell {
 
     static let identifier = "RequestCell"
+
     var onAssignTap: (() -> Void)?
+    var onEscalateTap: (() -> Void)?   // 🔥 NEW (logic only)
 
     // MARK: - UI
 
@@ -22,21 +24,20 @@ final class RequestCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
+        setupLongPress()   // 🔥 NEW
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - UI Setup
+    // MARK: - UI Setup (UNCHANGED)
 
     private func setupUI() {
-
         selectionStyle = .none
         backgroundColor = .clear
         contentView.backgroundColor = .clear
 
-        // CARD (unchanged)
         card.backgroundColor = .white
         card.layer.cornerRadius = 16
         card.layer.shadowColor = UIColor.black.cgColor
@@ -46,7 +47,6 @@ final class RequestCell: UITableViewCell {
         card.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(card)
 
-        // TEXT (unchanged)
         titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         titleLabel.textColor = .label
 
@@ -56,7 +56,6 @@ final class RequestCell: UITableViewCell {
         dateLabel.font = .systemFont(ofSize: 14)
         dateLabel.textColor = .tertiaryLabel
 
-        // STATUS BADGE (STYLE UNCHANGED)
         statusBadge.font = .systemFont(ofSize: 14, weight: .semibold)
         statusBadge.textColor = .white
         statusBadge.layer.cornerRadius = 16
@@ -64,7 +63,6 @@ final class RequestCell: UITableViewCell {
         statusBadge.textInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
         statusBadge.translatesAutoresizingMaskIntoConstraints = false
 
-        // IMAGE (unchanged)
         photoView.contentMode = .scaleAspectFill
         photoView.clipsToBounds = true
         photoView.layer.cornerRadius = 14
@@ -75,7 +73,6 @@ final class RequestCell: UITableViewCell {
         photoView.heightAnchor.constraint(equalToConstant: 200).isActive = true
         photoView.isHidden = true
 
-        // ASSIGN BUTTON (unchanged)
         assignButton.setTitle("Assign", for: .normal)
         assignButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         assignButton.backgroundColor = .systemBlue
@@ -86,7 +83,6 @@ final class RequestCell: UITableViewCell {
         )
         assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
 
-        // STACKS (status REMOVED from flow)
         let infoStack = UIStackView(arrangedSubviews: [
             titleLabel,
             locationLabel,
@@ -107,28 +103,41 @@ final class RequestCell: UITableViewCell {
         mainStack.translatesAutoresizingMaskIntoConstraints = false
 
         card.addSubview(mainStack)
-        card.addSubview(statusBadge) // 🔥 top-right badge
+        card.addSubview(statusBadge)
 
         NSLayoutConstraint.activate([
-            // Card
             card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
 
-            // Main stack
             mainStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             mainStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
             mainStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
             mainStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
 
-            // 🔥 STATUS TOP-RIGHT
             statusBadge.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
             statusBadge.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
         ])
     }
 
-    // MARK: - Configure
+    // MARK: - NEW: Long Press (NO UI CHANGE)
+
+    private func setupLongPress() {
+        let press = UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(longPressed(_:))
+        )
+        press.minimumPressDuration = 0.5
+        card.addGestureRecognizer(press)
+    }
+
+    @objc private func longPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        onEscalateTap?()
+    }
+
+    // MARK: - Configure (UNCHANGED)
 
     func configure(with request: Request) {
 
@@ -154,7 +163,6 @@ final class RequestCell: UITableViewCell {
 
         if let urlString = request.imageURL,
            let url = URL(string: urlString) {
-
             URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
                 guard let data else { return }
                 DispatchQueue.main.async {
@@ -164,7 +172,7 @@ final class RequestCell: UITableViewCell {
         }
     }
 
-    // MARK: - Action
+    // MARK: - Actions
 
     @objc private func assignTapped() {
         onAssignTap?()
