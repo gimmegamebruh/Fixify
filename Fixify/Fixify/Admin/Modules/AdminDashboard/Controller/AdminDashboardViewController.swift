@@ -101,7 +101,11 @@ final class AdminDashboardViewController: UIViewController {
         statsGrid.spacing = 16
 
         let addTech = primaryButton("Add New Technician")
-
+        addTech.addTarget(
+            self,
+            action: #selector(manageTechTapped),
+            for: .touchUpInside
+        )
         let inventory = primaryButton("Manage Inventory")
         inventory.addTarget(
             self,
@@ -204,7 +208,10 @@ final class AdminDashboardViewController: UIViewController {
         let invvc = InventoryManagmentViewController()
         navigationController?.pushViewController(invvc, animated: true)
     }
-
+    @objc private func manageTechTapped() {
+        let mtv = ManageTechnicianViewController()
+        navigationController?.pushViewController(mtv, animated: true)
+    }
     @objc private func viewAllTapped() {
         let vc = EscalatedRequestsViewController()
         navigationController?.pushViewController(vc, animated: true)
