@@ -111,7 +111,7 @@ final class LoginViewController: UIViewController {
             }
 
             guard let uid = result?.user.uid else { return }
-            self.fetchUserRole(uid: uid)
+            self.fetchUserProfile(uid: uid)
         }
     }
 

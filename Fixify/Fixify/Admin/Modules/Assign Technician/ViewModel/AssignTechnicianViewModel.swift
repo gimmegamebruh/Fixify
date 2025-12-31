@@ -68,15 +68,23 @@ final class AssignTechnicianViewModel {
             return
         }
 
+        // ✅ Assign technician + status
         request.assignedTechnicianID = technician.id
         request.status = .assigned
 
-        // 🔥 IMPORTANT: keep local reference in sync
+        // ✅ Keep local state in sync
         currentRequest = request
 
-        // 🔥 Optimistic update
+        // ✅ Update store
         requestStore.updateRequest(request)
+
+        // 🔥🔥🔥 MISSING PIECE 🔥🔥🔥
+        NotificationCenter.default.post(
+            name: .technicianRequestsDidChange,
+            object: nil
+        )
 
         completion(true)
     }
+
 }

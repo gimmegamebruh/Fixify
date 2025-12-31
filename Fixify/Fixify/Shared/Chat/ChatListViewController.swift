@@ -37,25 +37,70 @@ final class ChatListViewController: UITableViewController {
     }
 
     @objc private func reload() {
+
+        print("========== CHAT RELOAD ==========")
+        print("👤 CurrentUser.role =", CurrentUser.role)
+        print("👤 CurrentUser.id   =", CurrentUser.id)
+        print("👤 technicianID     =", CurrentUser.technicianID ?? "nil")
+        print("📦 Total requests in store =", store.requests.count)
+
+        for r in store.requests {
+            print("""
+            🔹 Request:
+            id = \(r.id)
+            createdBy = \(r.createdBy)
+            status = \(r.status.rawValue)
+            assignedTechnicianID = \(r.assignedTechnicianID ?? "nil")
+            """)
+        }
+
         switch CurrentUser.role {
+
         case .student:
-            chats = store.requests.filter {
-                $0.createdBy == CurrentUser.id &&
-                ($0.status == .active || $0.status == .completed)
+            chats = store.requests.filter { request in
+
+                print("🧪 Checking request \(request.id)")
+
+                guard request.createdBy == CurrentUser.id else {
+                    print("❌ rejected: createdBy mismatch")
+                    return false
+                }
+
+                guard request.assignedTechnicianID != nil else {
+                    print("❌ rejected: no technician assigned")
+                    return false
+                }
+
+                switch request.status {
+                case .assigned, .active, .completed:
+                    print("✅ accepted")
+                    return true
+                default:
+                    print("❌ rejected: invalid status")
+                    return false
+                }
             }
 
         case .technician:
             let techID = CurrentUser.technicianID ?? CurrentUser.id
-            chats = store.requests.filter {
-                $0.assignedTechnicianID == techID
+
+            chats = store.requests.filter { request in
+                let match = request.assignedTechnicianID == techID
+                print("🧪 Tech check \(request.id) → \(match)")
+                return match
             }
 
         case .admin:
             chats = []
         }
 
+        print("✅ Chats count after filter =", chats.count)
+        print("================================")
+
         tableView.reloadData()
     }
+
+
 
     // MARK: - Table
 
