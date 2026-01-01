@@ -116,27 +116,39 @@ final class LoginViewController: UIViewController {
     }
 
     private func fetchUserRole(uid: String) {
+
         Firestore.firestore()
             .collection("users")
             .document(uid)
-            .getDocument { snapshot, _ in
+            .getDocument { snapshot, error in
 
                 guard
                     let data = snapshot?.data(),
                     let roleString = data["role"] as? String
                 else {
-                    self.showAlert("Error", "User role not found")
+                    self.showAlert("Error", "User profile not found")
                     return
                 }
 
-                let role: UserRole = roleString == "technician" ? .technician :
-                                    roleString == "admin" ? .admin : .student
+                let role: UserRole
+                switch roleString {
+                case "technician": role = .technician
+                case "admin": role = .admin
+                default: role = .student
+                }
+
+                // ✅ SAVE USER SESSION (THIS WAS MISSING)
+                CurrentUser.userID = uid
+                CurrentUser.role = role
+                CurrentUser.name = data["name"] as? String
+                CurrentUser.email = data["email"] as? String
 
                 DispatchQueue.main.async {
                     SceneDelegate.switchToRole(role)
                 }
             }
     }
+
 
     private func showAlert(_ title: String, _ message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)

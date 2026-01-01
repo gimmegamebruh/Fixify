@@ -17,6 +17,8 @@ struct Request: Identifiable, Codable {
     // Ownership
     let createdBy: String
     var assignedTechnicianID: String?
+    var assignmentSource: AssignmentSource?
+    var assignedByUserID: String?
 
     // Timing
     let dateCreated: Date
@@ -28,4 +30,14 @@ struct Request: Identifiable, Codable {
 
     // Media (Firebase-friendly)
     var imageURL: String?
+
+    var effectiveAssignmentSource: AssignmentSource? {
+        if let assignmentSource { return assignmentSource }
+        if assignedTechnicianID != nil { return .admin }
+        return nil
+    }
+
+    var isAssigned: Bool {
+        assignedTechnicianID != nil
+    }
 }

@@ -7,10 +7,10 @@ final class TechnicianHistoryViewController: UITableViewController {
     private var completed: [Request] {
         store.requests.filter { request in
             if request.status != .completed { return false }
-            if let techID = CurrentUser.technicianID ?? CurrentUser.id {
+            if CurrentUser.role == .technician, let techID = CurrentUser.userID {
                 return request.assignedTechnicianID == techID
             }
-            return true
+            return CurrentUser.role != .technician
         }
     }
 

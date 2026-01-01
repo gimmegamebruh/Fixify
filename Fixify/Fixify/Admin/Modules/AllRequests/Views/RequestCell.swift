@@ -113,6 +113,8 @@ final class RequestCell: UITableViewCell {
         switch request.status {
         case .pending:
             statusBadge.backgroundColor = .systemYellow
+        case .assigned:
+            statusBadge.backgroundColor = .systemTeal
 
         case .active:
             statusBadge.backgroundColor = .systemBlue

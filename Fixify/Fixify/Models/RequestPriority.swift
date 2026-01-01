@@ -6,11 +6,24 @@
 //
 
 
-import Foundation
+import UIKit
 
 enum RequestPriority: String, Codable, CaseIterable {
     case low
     case medium
     case high
     case urgent
+
+    var color: UIColor {
+        switch self {
+        case .low:
+            return .systemGreen
+        case .medium:
+            return .systemBlue
+        case .high:
+            return .systemOrange
+        case .urgent:
+            return .systemRed
+        }
+    }
 }
