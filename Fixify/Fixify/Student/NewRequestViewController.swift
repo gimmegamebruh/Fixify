@@ -5,7 +5,6 @@ final class NewRequestViewController: UIViewController {
 
     // MARK: - Dependencies
     private let store = RequestStore.shared
-    private let currentStudentID = CurrentUser.id ?? "unknown"
     // MARK: - UI
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
@@ -184,7 +183,8 @@ final class NewRequestViewController: UIViewController {
     // MARK: - Submit
     @objc private func submitTapped() {
 
-        guard let userID = CurrentUser.userID else {
+        // Try cached ID first, fall back to Firebase session to avoid false "not logged in" alerts.
+        guard let userID = CurrentUser.resolvedUserID() else {
             showAlert("User not logged in.")
             return
         }
@@ -313,4 +313,3 @@ extension NewRequestViewController: PHPickerViewControllerDelegate {
         }
     }
 }
-
