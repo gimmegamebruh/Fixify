@@ -282,6 +282,14 @@ extension NewRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource
         pickerView == priorityPicker ? priorities.count : categories.count
     }
 
+    func pickerView(_ pickerView: UIPickerView,
+        titleForRow row: Int,
+        forComponent component: Int) -> String? {
+        pickerView == priorityPicker
+        ? priorities[row]
+        : categories[row]
+    }
+
     func pickerView(
         _ pickerView: UIPickerView,
         didSelectRow row: Int,
