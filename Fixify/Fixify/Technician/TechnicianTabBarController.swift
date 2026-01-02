@@ -1,6 +1,7 @@
 import UIKit
 
 final class TechnicianTabBarController: UITabBarController {
+
     override func viewDidLoad() {
         super.viewDidLoad()
         tabBar.tintColor = .systemBlue
@@ -8,7 +9,10 @@ final class TechnicianTabBarController: UITabBarController {
     }
 
     private func setupTabs() {
-        let dashboard = UINavigationController(rootViewController: TechnicianRequestsViewController())
+
+        let dashboard = UINavigationController(
+            rootViewController: TechnicianRequestsViewController()
+        )
         dashboard.tabBarItem = UITabBarItem(
             title: "Home",
             image: UIImage(systemName: "house"),
@@ -29,18 +33,18 @@ final class TechnicianTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "bubble.left.fill")
         )
 
-        let profile = UINavigationController(rootViewController: ProfileViewController())
-        profile.tabBarItem = UITabBarItem(
-            title: "Profile",
-            image: UIImage(systemName: "person"),
-            selectedImage: UIImage(systemName: "person.fill")
+        let settings = UINavigationController(rootViewController: SettingsViewController())
+        settings.tabBarItem = UITabBarItem(
+            title: "Settings",
+            image: UIImage(systemName: "gearshape"),
+            selectedImage: UIImage(systemName: "gearshape.fill")
         )
 
         viewControllers = [
             dashboard,
             notifications,
             chat,
-            profile
+            settings
         ]
     }
 }

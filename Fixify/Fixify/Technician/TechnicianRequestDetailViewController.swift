@@ -309,7 +309,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
     }
 
     @objc private func openChat() {
-        let chatVC = ChatListViewController()
+        let chatVC = ChatViewController(requestID: request.id)
         navigationController?.pushViewController(chatVC, animated: true)
     }
 

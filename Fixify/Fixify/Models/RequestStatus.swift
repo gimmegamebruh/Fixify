@@ -2,13 +2,11 @@ import UIKit
 
 enum RequestStatus: String, Codable, CaseIterable {
 
-    case pending        // student just submitted
-    case assigned       // assigned to a technician but not started
-    case active         // technician working on it
-    case completed      // finished
-    case cancelled      // student/admin cancelled
-
-    // 🔥 Admin-only
+    case pending
+    case assigned
+    case active
+    case completed
+    case cancelled
     case escalated
 
     var color: UIColor {
@@ -25,6 +23,17 @@ enum RequestStatus: String, Codable, CaseIterable {
             return .systemRed
         case .escalated:
             return .systemOrange
+        }
+    }
+}
+
+extension RequestStatus {
+    var canAssignTechnician: Bool {
+        switch self {
+        case .pending, .assigned, .escalated:
+            return true
+        case .active, .completed, .cancelled:
+            return false
         }
     }
 }

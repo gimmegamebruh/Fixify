@@ -111,7 +111,7 @@ final class LoginViewController: UIViewController {
             }
 
             guard let uid = result?.user.uid else { return }
-            self.fetchUserRole(uid: uid)
+            self.fetchUserProfile(uid: uid)
         }
     }
 
@@ -148,6 +148,41 @@ final class LoginViewController: UIViewController {
                 }
             }
     }
+    
+    private func fetchUserProfile(uid: String) {
+
+        Firestore.firestore()
+            .collection("users")
+            .document(uid)
+            .getDocument { snapshot, error in
+
+                if let error = error {
+                    self.showAlert("Error", error.localizedDescription)
+                    return
+                }
+
+                guard let data = snapshot?.data() else {
+                    self.showAlert("Error", "User profile not found")
+                    return
+                }
+
+                // ✅ Save everything to CurrentUser
+                CurrentUser.id = uid
+                CurrentUser.email = data["email"] as? String
+                CurrentUser.name = data["name"] as? String
+                CurrentUser.studentId = data["studentId"] as? String
+                CurrentUser.technicianID = data["technicianID"] as? String
+                CurrentUser.profileImageURL = data["profileImageURL"] as? String
+
+                let roleString = data["role"] as? String ?? "student"
+                CurrentUser.role = UserRole(rawValue: roleString) ?? .student
+
+                DispatchQueue.main.async {
+                    SceneDelegate.switchToRole(CurrentUser.role)
+                }
+            }
+    }
+
 
 
     private func showAlert(_ title: String, _ message: String) {

@@ -1,8 +1,3 @@
-//
-//  AssignTechnicianViewController.swift
-//  Fixify
-//
-
 import UIKit
 
 final class AssignTechnicianViewController: UIViewController {
@@ -19,21 +14,39 @@ final class AssignTechnicianViewController: UIViewController {
         fatalError("init(coder:) not implemented")
     }
 
+    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
         title = "Assign Technician"
         view.backgroundColor = .systemGroupedBackground
+
         setupTableView()
+
+        // ✅ Bind reload callback
+        viewModel.onUpdate = { [weak self] in
+            DispatchQueue.main.async {
+                self?.tableView.reloadData()
+            }
+        }
+
+        // ✅ Load data
         viewModel.load()
     }
 
+    // MARK: - Table Setup
+
     private func setupTableView() {
+
         tableView.register(
             TechnicianCell.self,
             forCellReuseIdentifier: TechnicianCell.identifier
         )
+
         tableView.dataSource = self
         tableView.separatorStyle = .none
+        tableView.backgroundColor = .clear
 
         view.addSubview(tableView)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -45,11 +58,28 @@ final class AssignTechnicianViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
+
+    // MARK: - Error
+
+    private func showError(_ msg: String) {
+        let alert = UIAlertController(
+            title: "Error",
+            message: msg,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
 }
+
+// MARK: - UITableViewDataSource
 
 extension AssignTechnicianViewController: UITableViewDataSource {
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
         viewModel.technicians.count
     }
 
@@ -67,14 +97,21 @@ extension AssignTechnicianViewController: UITableViewDataSource {
 
         cell.configure(
             with: technician,
-            isBusy: viewModel.isBusy(technician),
             isCurrentlyAssigned: viewModel.isCurrentlyAssigned(technician)
         )
 
         cell.onAssignTapped = { [weak self] in
-            self?.viewModel.assignTechnician(technician) { success in
-                if success {
-                    self?.navigationController?.popViewController(animated: true)
+            guard let self else { return }
+
+            self.viewModel.assignTechnician(technician) { success in
+                DispatchQueue.main.async {
+                    if success {
+                        self.navigationController?.popViewController(animated: true)
+                    } else {
+                        self.showError(
+                            "Technician could not be assigned. Request may be locked."
+                        )
+                    }
                 }
             }
         }

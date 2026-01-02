@@ -1,51 +1,64 @@
-//
-//  TechnicianMetricsCalculator.swift
-//  Fixify
-//
-
 import Foundation
 
 final class TechnicianMetricsCalculator {
 
     private let store = RequestStore.shared
 
+    /// Calculates technician metrics using ONLY Request data
+    /// - No Firebase writes
+    /// - No extra timestamps
+    /// - Same logic used everywhere (ASSIGNED + ACTIVE)
     func calculate(
         for technicianID: String,
         completion: @escaping (TechnicianMetrics) -> Void
     ) {
-        let requests = store.requests
 
-        let assignedRequests = requests.filter {
+        // All requests assigned to this technician
+        let assignedRequests = store.requests.filter {
             $0.assignedTechnicianID == technicianID
         }
 
-        let completedRequests = assignedRequests.filter {
+        // MARK: - Active jobs (assigned OR active)
+        let activeJobs = assignedRequests.filter {
+            $0.status == .assigned || $0.status == .active
+        }
+
+        // MARK: - Completed jobs
+        let completedJobs = assignedRequests.filter {
             $0.status == .completed
         }
 
-        let pendingRequests = assignedRequests.filter {
-            $0.status == .pending || $0.status == .active
+        // MARK: - Average completion time (approximate, days)
+        let completionDurations: [Double] = completedJobs.map { request in
+            Date().timeIntervalSince(request.dateCreated) / 86400.0
         }
 
-        // ⏱ Estimate completion time
-        let completionDays: [Int] = completedRequests.map {
-            Calendar.current.dateComponents(
-                [.day],
-                from: $0.dateCreated,
-                to: Date()
-            ).day ?? 0
+        let averageCompletionTime: Double
+        if completionDurations.isEmpty {
+            averageCompletionTime = 0
+        } else {
+            averageCompletionTime =
+                completionDurations.reduce(0, +) / Double(completionDurations.count)
         }
 
-        let averageCompletionTime = completionDays.isEmpty
-            ? 0
-            : completionDays.reduce(0, +) / completionDays.count
+        // MARK: - Ratings
+        let ratings = completedJobs.compactMap { $0.rating }
 
+        let averageRating: Double
+        if ratings.isEmpty {
+            averageRating = 0
+        } else {
+            averageRating =
+                Double(ratings.reduce(0, +)) / Double(ratings.count)
+        }
+
+        // MARK: - Final Metrics
         let metrics = TechnicianMetrics(
-            totalJobsCompleted: completedRequests.count,
-            pendingJobs: pendingRequests.count,
-            averageCompletionTime: Double(averageCompletionTime),
-            customerRating: 0,   // later from reviews
-            totalReviews: 0
+            totalJobsCompleted: completedJobs.count,
+            pendingJobs: activeJobs.count, // 🔥 ASSIGNED + ACTIVE
+            averageCompletionTime: averageCompletionTime,
+            customerRating: averageRating,
+            totalReviews: ratings.count
         )
 
         completion(metrics)

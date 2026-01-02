@@ -3,10 +3,10 @@ import UIKit
 final class EscalatedRequestCell: UITableViewCell {
 
     static let identifier = "EscalatedRequestCell"
-
     var onViewTap: (() -> Void)?
 
     private let card = UIView()
+
     private let titleLabel = UILabel()
     private let locationLabel = UILabel()
     private let badgeLabel = UILabel()
@@ -24,93 +24,81 @@ final class EscalatedRequestCell: UITableViewCell {
         selectionStyle = .none
         backgroundColor = .clear
 
-        card.backgroundColor = .white
-        card.layer.cornerRadius = 14
-        card.layer.shadowOpacity = 0.08
-        card.layer.shadowRadius = 6
-        card.layer.shadowOffset = CGSize(width: 0, height: 3)
+        card.dsCard()
+        contentView.addSubview(card)
+        card.translatesAutoresizingMaskIntoConstraints = false
 
-        titleLabel.font = .boldSystemFont(ofSize: 16)
-        locationLabel.font = .systemFont(ofSize: 14)
-        locationLabel.textColor = .darkGray
+        titleLabel.font = DS.Font.section()
+        locationLabel.font = DS.Font.body()
+        locationLabel.textColor = DS.Color.subtext
 
         badgeLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         badgeLabel.textColor = .white
+        badgeLabel.layer.cornerRadius = 12
+        badgeLabel.clipsToBounds = true
         badgeLabel.textAlignment = .center
-        badgeLabel.layer.cornerRadius = 6
-        badgeLabel.layer.masksToBounds = true
+        badgeLabel.setContentHuggingPriority(.required, for: .horizontal)
 
         viewButton.setTitle("View", for: .normal)
-        viewButton.setTitleColor(.white, for: .normal)
-        viewButton.backgroundColor = .systemBlue
-        viewButton.layer.cornerRadius = 10
-        viewButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
+        viewButton.backgroundColor = DS.Color.primary
+        viewButton.tintColor = .white
+        viewButton.layer.cornerRadius = 16
         viewButton.addTarget(self, action: #selector(viewTapped), for: .touchUpInside)
 
-        let textStack = UIStackView(arrangedSubviews: [
-            titleLabel,
-            locationLabel
-        ])
-        textStack.axis = .vertical
-        textStack.spacing = 6
+        let topRow = UIStackView(arrangedSubviews: [titleLabel, badgeLabel])
+        topRow.axis = .horizontal
+        topRow.alignment = .center
 
-        let rightStack = UIStackView(arrangedSubviews: [
-            badgeLabel,
+        let stack = UIStackView(arrangedSubviews: [
+            topRow,
+            locationLabel,
             viewButton
         ])
-        rightStack.axis = .vertical
-        rightStack.spacing = 8
-        rightStack.alignment = .trailing
 
-        let mainStack = UIStackView(arrangedSubviews: [
-            textStack,
-            rightStack
-        ])
-        mainStack.axis = .horizontal
-        mainStack.spacing = 12
-        mainStack.alignment = .top
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.spacing = 12
 
-        contentView.addSubview(card)
-        card.addSubview(mainStack)
-
-        card.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
             card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
 
-            mainStack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
-            mainStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            mainStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
-            mainStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
 
-            badgeLabel.heightAnchor.constraint(equalToConstant: 22),
-            badgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 70),
-
-            viewButton.widthAnchor.constraint(equalToConstant: 70),
-            viewButton.heightAnchor.constraint(equalToConstant: 32)
+            viewButton.heightAnchor.constraint(equalToConstant: 36),
+            viewButton.widthAnchor.constraint(equalToConstant: 90)
         ])
     }
 
-    // ✅ NEW CONFIGURE METHOD
-    func configure(with request: Request, escalationType: EscalationFilter) {
+    func configure(with request: Request, type: EscalationFilter?) {
+
         titleLabel.text = request.title
         locationLabel.text = request.location
 
-        switch escalationType {
-        case .overdue:
+        switch type {
+        case .some(.overdue):
             badgeLabel.text = "OVERDUE"
-            badgeLabel.backgroundColor = .systemOrange
-        case .urgent:
-            badgeLabel.text = "URGENT"
             badgeLabel.backgroundColor = .systemRed
-        case .all:
-            badgeLabel.text = "ESCALATED"
+
+        case .some(.urgent):
+            badgeLabel.text = "URGENT"
+            badgeLabel.backgroundColor = .systemOrange
+
+        case .some(.all), .none:
+            badgeLabel.text = "ATTENTION"
             badgeLabel.backgroundColor = .systemPurple
         }
+
+
+
+        badgeLabel.padding(left: 10, right: 10, top: 4, bottom: 4)
     }
 
     @objc private func viewTapped() {

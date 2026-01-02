@@ -4,14 +4,6 @@ final class TechnicianRequestsViewController: UITableViewController {
 
     private enum CreatedSort: Int, CaseIterable {
         case newest
-        case oldest
-
-        var title: String {
-            switch self {
-            case .newest: return "Created: Newest"
-            case .oldest: return "Created: Oldest"
-            }
-        }
     }
 
     private enum PriorityFilter: Int, CaseIterable {
@@ -24,18 +16,6 @@ final class TechnicianRequestsViewController: UITableViewController {
             case .medium: return "Medium"
             case .high: return "High"
             case .urgent: return "Urgent"
-            }
-        }
-    }
-
-    private enum AssignmentSourceFilter: Int, CaseIterable {
-        case all, admin, selfAssigned
-
-        var title: String {
-            switch self {
-            case .all: return "All"
-            case .admin: return "Admin"
-            case .selfAssigned: return "Self"
             }
         }
     }
@@ -70,16 +50,10 @@ final class TechnicianRequestsViewController: UITableViewController {
     private let countLabel = UILabel()
     private let statusControl = UISegmentedControl()
     private let assignmentControl = UISegmentedControl()
-    private let createdSortControl = UISegmentedControl()
-    private let dateFilterControl = UISegmentedControl()
     private let priorityControl = UISegmentedControl()
-    private let assignmentSourceControl = UISegmentedControl()
     private var statusFilter: StatusFilter = .all
     private var assignmentFilter: AssignmentFilter = .all
-    private var createdSort: CreatedSort = .newest
-    private var dateFilter: RequestDateFilter = .all
     private var priorityFilter: PriorityFilter = .all
-    private var assignmentSourceFilter: AssignmentSourceFilter = .all
 
     private var technicianUserID: String? {
         guard CurrentUser.role == .technician else { return nil }
@@ -89,25 +63,11 @@ final class TechnicianRequestsViewController: UITableViewController {
     private var filteredRequests: [Request] {
         store.requests.filter { request in
             guard matchesAssignmentFilter(request) else { return false }
-            guard matchesDate(request) else { return false }
             guard matchesPriority(request) else { return false }
-            guard matchesAssignmentSource(request) else { return false }
-
-        switch statusFilter {
-        case .all: return request.status != .cancelled && request.status != .completed
-        case .active: return request.status == .active
-        case .pending: return request.status == .pending || request.status == .assigned
-        case .cancelled: return request.status == .cancelled
-        case .completed: return request.status == .completed
-        }
+            return matchesStatus(request)
         }
         .sorted { lhs, rhs in
-            switch createdSort {
-            case .newest:
-                return lhs.dateCreated > rhs.dateCreated
-            case .oldest:
-                return lhs.dateCreated < rhs.dateCreated
-            }
+            lhs.dateCreated > rhs.dateCreated
         }
     }
 
@@ -158,20 +118,6 @@ final class TechnicianRequestsViewController: UITableViewController {
         assignmentControl.selectedSegmentIndex = assignmentFilter.rawValue
         assignmentControl.addTarget(self, action: #selector(assignmentFilterChanged), for: .valueChanged)
 
-        createdSortControl.removeAllSegments()
-        CreatedSort.allCases.enumerated().forEach { idx, sort in
-            createdSortControl.insertSegment(withTitle: sort.title, at: idx, animated: false)
-        }
-        createdSortControl.selectedSegmentIndex = createdSort.rawValue
-        createdSortControl.addTarget(self, action: #selector(createdSortChanged), for: .valueChanged)
-
-        dateFilterControl.removeAllSegments()
-        RequestDateFilter.allCases.enumerated().forEach { idx, filter in
-            dateFilterControl.insertSegment(withTitle: filter.title, at: idx, animated: false)
-        }
-        dateFilterControl.selectedSegmentIndex = RequestDateFilter.allCases.firstIndex(of: dateFilter) ?? 0
-        dateFilterControl.addTarget(self, action: #selector(dateFilterChanged), for: .valueChanged)
-
         priorityControl.removeAllSegments()
         PriorityFilter.allCases.enumerated().forEach { idx, filter in
             priorityControl.insertSegment(withTitle: filter.title, at: idx, animated: false)
@@ -179,21 +125,11 @@ final class TechnicianRequestsViewController: UITableViewController {
         priorityControl.selectedSegmentIndex = priorityFilter.rawValue
         priorityControl.addTarget(self, action: #selector(priorityChanged), for: .valueChanged)
 
-        assignmentSourceControl.removeAllSegments()
-        AssignmentSourceFilter.allCases.enumerated().forEach { idx, filter in
-            assignmentSourceControl.insertSegment(withTitle: filter.title, at: idx, animated: false)
-        }
-        assignmentSourceControl.selectedSegmentIndex = assignmentSourceFilter.rawValue
-        assignmentSourceControl.addTarget(self, action: #selector(assignmentSourceChanged), for: .valueChanged)
-
         let stack = UIStackView(arrangedSubviews: [
             countLabel,
             statusControl,
             assignmentControl,
-            createdSortControl,
-            dateFilterControl,
-            priorityControl,
-            assignmentSourceControl
+            priorityControl
         ])
         stack.axis = .vertical
         stack.spacing = 10
@@ -231,25 +167,8 @@ final class TechnicianRequestsViewController: UITableViewController {
         reload()
     }
 
-    @objc private func createdSortChanged() {
-        createdSort = CreatedSort(rawValue: createdSortControl.selectedSegmentIndex) ?? .newest
-        reload()
-    }
-
-    @objc private func dateFilterChanged() {
-        let allCases = Array(RequestDateFilter.allCases)
-        let index = dateFilterControl.selectedSegmentIndex
-        dateFilter = allCases.indices.contains(index) ? allCases[index] : .all
-        reload()
-    }
-
     @objc private func priorityChanged() {
         priorityFilter = PriorityFilter(rawValue: priorityControl.selectedSegmentIndex) ?? .all
-        reload()
-    }
-
-    @objc private func assignmentSourceChanged() {
-        assignmentSourceFilter = AssignmentSourceFilter(rawValue: assignmentSourceControl.selectedSegmentIndex) ?? .all
         reload()
     }
 
@@ -289,11 +208,6 @@ final class TechnicianRequestsViewController: UITableViewController {
         }
     }
 
-    private func matchesDate(_ request: Request) -> Bool {
-        let date = selectedDate(for: request)
-        return dateFilter.includes(date)
-    }
-
     private func matchesPriority(_ request: Request) -> Bool {
         switch priorityFilter {
         case .all: return true
@@ -304,21 +218,19 @@ final class TechnicianRequestsViewController: UITableViewController {
         }
     }
 
-    private func matchesAssignmentSource(_ request: Request) -> Bool {
-        let source = request.effectiveAssignmentSource
-
-        switch assignmentSourceFilter {
+    private func matchesStatus(_ request: Request) -> Bool {
+        switch statusFilter {
         case .all:
-            return true
-        case .admin:
-            return source == .admin
-        case .selfAssigned:
-            return source == .technician
+            return request.status != .cancelled && request.status != .completed
+        case .active:
+            return request.status == .active
+        case .pending:
+            return request.status == .pending || request.status == .assigned
+        case .cancelled:
+            return request.status == .cancelled
+        case .completed:
+            return request.status == .completed
         }
-    }
-
-    private func selectedDate(for request: Request) -> Date {
-        return request.dateCreated
     }
 
     override func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {

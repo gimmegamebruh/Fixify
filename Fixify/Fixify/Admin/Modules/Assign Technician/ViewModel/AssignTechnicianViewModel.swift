@@ -1,8 +1,3 @@
-//
-//  AssignTechnicianViewModel.swift
-//  Fixify
-//
-
 import Foundation
 
 final class AssignTechnicianViewModel {
@@ -14,9 +9,11 @@ final class AssignTechnicianViewModel {
     private let requestID: String
     private var currentRequest: Request?
 
+    var onUpdate: (() -> Void)?
+
     init(
         requestID: String,
-        technicianService: TechnicianServicing = LocalTechnicianService.shared
+        technicianService: TechnicianServicing = FirebaseTechnicianService.shared
     ) {
         self.requestID = requestID
         self.technicianService = technicianService
@@ -25,12 +22,21 @@ final class AssignTechnicianViewModel {
     // MARK: - Load
 
     func load() {
-        technicianService.fetchAll { [weak self] techs in
-            self?.technicians = techs
-        }
 
         currentRequest = requestStore.requests.first {
             $0.id == requestID
+        }
+
+        technicianService.fetchAll { [weak self] techs in
+            guard let self else { return }
+
+            self.technicians = techs.map { technician in
+                var tech = technician
+                tech.activeJobs = self.jobCount(for: technician.id)
+                return tech
+            }
+
+            self.onUpdate?()
         }
     }
 
@@ -40,15 +46,18 @@ final class AssignTechnicianViewModel {
         technicians[index]
     }
 
-    func isBusy(_ technician: Technician) -> Bool {
-        false // 🔓 multiple assignments allowed (for now)
-    }
-
     func isCurrentlyAssigned(_ technician: Technician) -> Bool {
         currentRequest?.assignedTechnicianID == technician.id
     }
 
-    // MARK: - Assign
+    private func jobCount(for technicianID: String) -> Int {
+        requestStore.requests.filter {
+            $0.assignedTechnicianID == technicianID &&
+            ($0.status == .assigned || $0.status == .active)
+        }.count
+    }
+
+    // MARK: - Assignment (🔥 FIXED)
 
     func assignTechnician(
         _ technician: Technician,
@@ -59,18 +68,23 @@ final class AssignTechnicianViewModel {
             return
         }
 
-        guard request.assignedTechnicianID != technician.id else {
-            completion(false)
-            return
-        }
-
-        // ✅ Update request
+        // ✅ Assign technician + status
         request.assignedTechnicianID = technician.id
-        request.status = .active
+        request.status = .assigned
 
-        // 🔥 Firebase update (LIVE)
-        RequestStore.shared.updateRequest(request)
+        // ✅ Keep local state in sync
+        currentRequest = request
+
+        // ✅ Update store
+        requestStore.updateRequest(request)
+
+        // 🔥🔥🔥 MISSING PIECE 🔥🔥🔥
+        NotificationCenter.default.post(
+            name: .technicianRequestsDidChange,
+            object: nil
+        )
 
         completion(true)
     }
+
 }

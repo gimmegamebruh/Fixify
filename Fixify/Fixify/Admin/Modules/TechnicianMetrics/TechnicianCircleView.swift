@@ -1,8 +1,3 @@
-//
-//  TechnicianCircleView.swift
-//  Fixify
-//
-
 import UIKit
 
 final class TechnicianCircleView: UIView {
@@ -32,6 +27,7 @@ final class TechnicianCircleView: UIView {
         nameLabel.text = name.components(separatedBy: " ").first
         nameLabel.font = .systemFont(ofSize: 12)
         nameLabel.textAlignment = .center
+        nameLabel.textColor = .secondaryLabel
 
         let stack = UIStackView(arrangedSubviews: [button, nameLabel])
         stack.axis = .vertical

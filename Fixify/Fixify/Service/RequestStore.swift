@@ -32,19 +32,39 @@ final class RequestStore {
         }
     }
 
-    // MARK: - Update
     func updateRequest(_ request: Request) {
+
+        if let idx = requests.firstIndex(where: { $0.id == request.id }) {
+            requests[idx] = request
+        } else {
+            requests.insert(request, at: 0)
+        }
+
+        NotificationCenter.default.post(
+            name: .technicianRequestsDidChange,
+            object: nil
+        )
+
         service.updateRequest(request)
     }
 
     // MARK: - Status
     func updateStatus(id: String, status: RequestStatus) {
+
+        if let index = requests.firstIndex(where: { $0.id == id }) {
+            requests[index].status = status
+        }
+
+        NotificationCenter.default.post(
+            name: .technicianRequestsDidChange,
+            object: nil
+        )
+
         service.updateStatus(id: id, status: status)
     }
-    
+
+
     func submitRating(requestID: String, rating: Int, comment: String?) {
         service.submitRating(id: requestID, rating: rating, comment: comment)
     }
-
 }
-

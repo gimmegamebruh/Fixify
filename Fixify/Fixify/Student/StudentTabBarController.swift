@@ -20,7 +20,7 @@ final class StudentTabBarController: UITabBarController {
         )
 
         let notifications = UINavigationController(
-            rootViewController: NotificationsViewController()
+            rootViewController: StudentNotificationsViewController()
         )
         notifications.tabBarItem = UITabBarItem(
             title: "Notifications",
@@ -38,7 +38,7 @@ final class StudentTabBarController: UITabBarController {
         )
 
         let profile = UINavigationController(
-            rootViewController: ProfileViewController()
+            rootViewController: SettingsViewController()
         )
         profile.tabBarItem = UITabBarItem(
             title: "Profile",
