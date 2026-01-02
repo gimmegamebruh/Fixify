@@ -44,9 +44,7 @@ final class TechnicianCell: UITableViewCell {
         assignButton.backgroundColor = DS.Color.primary
         assignButton.tintColor = .white
         assignButton.layer.cornerRadius = 12
-        assignButton.contentEdgeInsets = UIEdgeInsets(
-            top: 8, left: 20, bottom: 8, right: 20
-        )
+
 
         assignButton.addAction(UIAction { [weak self] _ in
             self?.onAssignTapped?()

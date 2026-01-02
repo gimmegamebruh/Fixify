@@ -41,7 +41,6 @@ final class EscalationDetailViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        // 🔥 Refresh from Firebase source of truth
         if let updated = requestStore.requests.first(where: { $0.id == request.id }) {
             request = updated
             refreshInfo()

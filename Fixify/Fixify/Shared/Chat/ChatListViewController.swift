@@ -40,7 +40,6 @@ final class ChatListViewController: UITableViewController {
 
         print("========== CHAT RELOAD ==========")
         print("👤 CurrentUser.role =", CurrentUser.role)
-        print("👤 CurrentUser.id   =", CurrentUser.id)
         print("👤 technicianID     =", CurrentUser.technicianID ?? "nil")
         print("📦 Total requests in store =", store.requests.count)
 

@@ -78,9 +78,8 @@ final class RequestCell: UITableViewCell {
         assignButton.backgroundColor = .systemBlue
         assignButton.tintColor = .white
         assignButton.layer.cornerRadius = 12
-        assignButton.contentEdgeInsets = UIEdgeInsets(
-            top: 10, left: 22, bottom: 10, right: 22
-        )
+        
+
         assignButton.addTarget(self, action: #selector(assignTapped), for: .touchUpInside)
 
         let infoStack = UIStackView(arrangedSubviews: [

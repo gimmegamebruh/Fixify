@@ -35,19 +35,28 @@ final class RequestService {
 
     // MARK: - Update full request
     func updateRequest(_ request: Request) {
+        var data: [String: Any] = [
+            "status": request.status.rawValue,
+            "priority": request.priority.rawValue
+        ]
+
+        if let techID = request.assignedTechnicianID {
+            data["assignedTechnicianID"] = techID
+        }
+
         db.collection("requests")
             .document(request.id)
-            .updateData([
-                "assignedTechnicianID": request.assignedTechnicianID as Any,
-                "status": request.status.rawValue
-            ]) { error in
+            .updateData(data) { error in
                 if let error {
                     print("❌ Firestore update failed:", error.localizedDescription)
                 } else {
-                    print("✅ Firestore updated status to:", request.status.rawValue)
+                    print("✅ Firestore updated status & priority:",
+                          request.status.rawValue,
+                          request.priority.rawValue)
                 }
             }
     }
+
 
 
     // MARK: - Update status only
