@@ -34,6 +34,19 @@ enum TechnicianNotificationBuilder {
                     type: .assigned
                 )
 
+            case .active:
+                if let scheduled = request.scheduledTime {
+                    return TechnicianNotification(
+                        id: "scheduled-\(request.id)",
+                        requestID: request.id,
+                        title: "Job Scheduled",
+                        subtitle: request.title,
+                        date: scheduled,
+                        type: .scheduled
+                    )
+                }
+                return nil
+
             case .completed:
                 return TechnicianNotification(
                     id: "complete-\(request.id)",

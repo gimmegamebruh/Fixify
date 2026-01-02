@@ -3,14 +3,34 @@ import FirebaseAuth
 
 enum CurrentUser {
 
+    // Session identity
     static var role: UserRole = .student
+    static var userID: String?
 
-    // 🔥 Identity
-    static var id: String?
+    // Profile basics
     static var name: String?
     static var email: String?
-    static var studentId: String?
-    static var technicianID: String?
+    // static var studentId: String?
+    // static var profileImageURL: String?
+
+    // Backward compatibility aliases (so old code won’t break)
+    static var id: String? {
+        get { userID }
+        set { userID = newValue }
+    }
+
+    static var technicianID: String? {
+        get { userID }
+        set { userID = newValue }
+    }
+
+    static var studentId: String? {
+        get { userID }
+        set { userID = newValue }
+    }
+
+    // Identity
+    // static var id: String?
 
     // Profile
     static var contactNumber: String?
@@ -55,6 +75,18 @@ enum CurrentUser {
         address = nil
         emergencyContact = nil
         technicianID = nil
+    }
+
+    /// Returns a non-nil user ID if possible, falling back to Firebase Auth if the cached value was cleared.
+    static func resolvedUserID() -> String? {
+        if let userID {
+            return userID
+        }
+        if let uid = Auth.auth().currentUser?.uid {
+            userID = uid
+            return uid
+        }
+        return nil
     }
 
     // MARK: - Debug

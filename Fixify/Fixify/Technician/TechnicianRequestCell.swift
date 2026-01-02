@@ -9,6 +9,8 @@ final class TechnicianRequestCell: UITableViewCell {
     private let metaLabel = UILabel()
     private let statusBadge = PaddingLabel()
     private let container = UIView()
+    private let photoView = UIImageView()
+    private var imageTask: URLSessionDataTask?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -26,18 +28,46 @@ final class TechnicianRequestCell: UITableViewCell {
         let df = DateFormatter()
         df.dateStyle = .medium
         df.timeStyle = .short
-        metaLabel.text = "Submitted \(df.string(from: request.dateCreated))"
+        let assignedText: String
+        if CurrentUser.role == .technician,
+           let techID = CurrentUser.userID,
+           let assigned = request.assignedTechnicianID {
+            assignedText = assigned == techID ? "Assigned to you" : "Assigned to another tech"
+        } else if request.assignedTechnicianID == nil {
+            assignedText = "Unassigned"
+        } else {
+            assignedText = "Assigned"
+        }
+        metaLabel.text = "Submitted \(df.string(from: request.dateCreated)) • \(assignedText)"
 
         statusBadge.text = request.status.rawValue.capitalized
         statusBadge.backgroundColor = request.status.color.withAlphaComponent(0.15)
         statusBadge.textColor = request.status.color
+
+        container.layer.borderColor = request.priority.color.withAlphaComponent(0.7).cgColor
+
+        imageTask?.cancel()
+        photoView.image = nil
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+            photoView.isHidden = false
+            imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data, let self else { return }
+                DispatchQueue.main.async {
+                    self.photoView.image = UIImage(data: data)
+                }
+            }
+            imageTask?.resume()
+        } else {
+            photoView.isHidden = true
+        }
     }
 
     private func setupUI() {
         container.layer.cornerRadius = 12
         container.backgroundColor = .systemBackground
         container.layer.borderColor = UIColor.separator.cgColor
-        container.layer.borderWidth = 1
+        container.layer.borderWidth = 1.5
         container.translatesAutoresizingMaskIntoConstraints = false
 
         titleLabel.font = .boldSystemFont(ofSize: 17)
@@ -51,7 +81,13 @@ final class TechnicianRequestCell: UITableViewCell {
         statusBadge.clipsToBounds = true
         statusBadge.textAlignment = .center
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel, metaLabel, statusBadge])
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = 10
+        photoView.heightAnchor.constraint(equalToConstant: 140).isActive = true
+        photoView.backgroundColor = .secondarySystemBackground
+
+        let stack = UIStackView(arrangedSubviews: [photoView, titleLabel, subtitleLabel, metaLabel, statusBadge])
         stack.axis = .vertical
         stack.spacing = 6
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -70,6 +106,13 @@ final class TechnicianRequestCell: UITableViewCell {
             stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
             stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12)
         ])
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        photoView.image = nil
+        photoView.isHidden = true
     }
 }
 

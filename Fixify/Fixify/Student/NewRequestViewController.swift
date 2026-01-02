@@ -49,6 +49,13 @@ final class NewRequestViewController: UIViewController {
         setupFields()
         setupPickers()
         setupLayout()
+        setDefaultPickerValues() // ✅ IMPORTANT
+    }
+
+    // MARK: - Defaults (FIX)
+    private func setDefaultPickerValues() {
+        priorityField.text = priorities.first
+        categoryField.text = categories.first
     }
 
     // MARK: - Setup Scroll
@@ -164,46 +171,32 @@ final class NewRequestViewController: UIViewController {
         tf.borderStyle = .roundedRect
     }
 
-    private func showAlert() {
+    private func showAlert(_ message: String) {
         let alert = UIAlertController(
             title: "Missing Info",
-            message: "Please fill all fields.",
+            message: message,
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
 
-    private func updatePhotoPreview(_ image: UIImage) {
-        photosStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        let imgView = UIImageView(image: image)
-        imgView.contentMode = .scaleAspectFill
-        imgView.clipsToBounds = true
-        imgView.layer.cornerRadius = 12
-        imgView.layer.borderWidth = 1
-        imgView.layer.borderColor = UIColor.systemGray4.cgColor
-        imgView.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            imgView.widthAnchor.constraint(equalToConstant: 140),
-            imgView.heightAnchor.constraint(equalToConstant: 140)
-        ])
-
-        photosStack.addArrangedSubview(imgView)
-    }
-
-    // MARK: - Actions
+    // MARK: - Submit
     @objc private func submitTapped() {
 
+        guard let userID = CurrentUser.userID else {
+            showAlert("User not logged in.")
+            return
+        }
+
         guard
-            let title = titleField.text, !title.isEmpty,
-            let location = locationField.text, !location.isEmpty,
+            let title = titleField.text?.trimmingCharacters(in: .whitespaces), !title.isEmpty,
+            let location = locationField.text?.trimmingCharacters(in: .whitespaces), !location.isEmpty,
             let priorityText = priorityField.text, !priorityText.isEmpty,
             let category = categoryField.text, !category.isEmpty,
             !descriptionView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
-            showAlert()
+            showAlert("Please fill all fields correctly.")
             return
         }
 
@@ -219,21 +212,21 @@ final class NewRequestViewController: UIViewController {
                 category: category,
                 priority: priority,
                 status: .pending,
-                createdBy: currentStudentID,
+                createdBy: userID,
                 assignedTechnicianID: nil,
+                assignmentSource: nil,
+                assignedByUserID: nil,
                 dateCreated: Date(),
                 scheduledTime: nil,
+                rating: nil,
+                ratingComment: nil,
                 imageURL: imageURL
             )
 
             store.add(request)
-
-            DispatchQueue.main.async {
-                self.navigationController?.popViewController(animated: true)
-            }
+            self.navigationController?.popViewController(animated: true)
         }
 
-        // 🔥 ONE upload path only
         if let image = selectedImage {
             CloudinaryUploadService.shared.upload(image: image) { url in
                 DispatchQueue.main.async {
@@ -245,7 +238,7 @@ final class NewRequestViewController: UIViewController {
         }
     }
 
-
+    // MARK: - Photo
     @objc private func addPhotoTapped() {
         var config = PHPickerConfiguration()
         config.selectionLimit = 1
@@ -255,6 +248,29 @@ final class NewRequestViewController: UIViewController {
         picker.delegate = self
         present(picker, animated: true)
     }
+    
+    // MARK: - Photo Preview
+    private func updatePhotoPreview(_ image: UIImage) {
+
+        // Remove old previews
+        photosStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        let imageView = UIImageView(image: image)
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 12
+        imageView.layer.borderWidth = 1
+        imageView.layer.borderColor = UIColor.systemGray4.cgColor
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            imageView.widthAnchor.constraint(equalToConstant: 140),
+            imageView.heightAnchor.constraint(equalToConstant: 140)
+        ])
+
+        photosStack.addArrangedSubview(imageView)
+    }
+
 }
 
 // MARK: - Pickers
@@ -264,14 +280,6 @@ extension NewRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource
 
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         pickerView == priorityPicker ? priorities.count : categories.count
-    }
-
-    func pickerView(
-        _ pickerView: UIPickerView,
-        titleForRow row: Int,
-        forComponent component: Int
-    ) -> String? {
-        pickerView == priorityPicker ? priorities[row] : categories[row]
     }
 
     func pickerView(

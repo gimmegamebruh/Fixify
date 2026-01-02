@@ -148,8 +148,26 @@ final class RequestCell: UITableViewCell {
         df.dateStyle = .medium
         dateLabel.text = "Date: \(df.string(from: request.dateCreated))"
 
-        statusBadge.text = request.status.rawValue.capitalized
-        statusBadge.backgroundColor = request.status.color
+        statusBadge.text = request.status.rawValue.uppercased()
+
+        switch request.status {
+        case .pending:
+            statusBadge.backgroundColor = .systemYellow
+        case .assigned:
+            statusBadge.backgroundColor = .systemTeal
+
+        case .active:
+            statusBadge.backgroundColor = .systemBlue
+
+        case .escalated:
+            statusBadge.backgroundColor = .systemOrange
+
+        case .completed:
+            statusBadge.backgroundColor = .systemGreen
+
+        case .cancelled:
+            statusBadge.backgroundColor = .systemRed
+        }
 
         let canAssign = request.status.canAssignTechnician
         assignButton.isEnabled = canAssign

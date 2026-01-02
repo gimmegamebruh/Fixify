@@ -10,13 +10,15 @@ final class TechnicianRequestDetailViewController: UIViewController {
     private let statusBadge = PaddingLabel()
     private let descriptionLabel = UILabel()
     private let locationLabel = UILabel()
+    private let assignmentLabel = UILabel()
+    private let warningLabel = UILabel()
     private let priorityLabel = PaddingLabel()
     private let dateLabel = UILabel()
+    private let photoView = UIImageView()
     private let assignButton = UIButton(type: .system)
     private let scheduleButton = UIButton(type: .system)
-
-    // ✅ ADDED (no logic change)
     private let chatButton = UIButton(type: .system)
+    private var imageTask: URLSessionDataTask?
 
     init(request: Request) {
         self.request = request
@@ -46,6 +48,15 @@ final class TechnicianRequestDetailViewController: UIViewController {
         statusBadge.clipsToBounds = true
         statusBadge.textAlignment = .center
 
+        assignmentLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        assignmentLabel.textColor = .secondaryLabel
+        assignmentLabel.numberOfLines = 0
+
+        warningLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        warningLabel.textColor = .systemRed
+        warningLabel.numberOfLines = 0
+        warningLabel.isHidden = true
+
         priorityLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         priorityLabel.layer.cornerRadius = 6
         priorityLabel.clipsToBounds = true
@@ -57,6 +68,12 @@ final class TechnicianRequestDetailViewController: UIViewController {
         locationLabel.font = .systemFont(ofSize: 15, weight: .medium)
         dateLabel.font = .systemFont(ofSize: 13)
         dateLabel.textColor = .secondaryLabel
+
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = 12
+        photoView.backgroundColor = .secondarySystemBackground
+        photoView.heightAnchor.constraint(equalToConstant: 220).isActive = true
 
         assignButton.setTitle("Assign to Me", for: .normal)
         assignButton.backgroundColor = .systemBlue
@@ -72,7 +89,6 @@ final class TechnicianRequestDetailViewController: UIViewController {
         scheduleButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
         scheduleButton.addTarget(self, action: #selector(scheduleJob), for: .touchUpInside)
 
-        // ✅ ADDED CHAT BUTTON (style matches existing buttons)
         chatButton.setTitle("Open Chat", for: .normal)
         chatButton.backgroundColor = .systemPurple
         chatButton.tintColor = .white
@@ -85,7 +101,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
             scheduleButton,
             makeActionButton(title: "Mark In Progress", color: .systemBlue, selector: #selector(markActive)),
             makeActionButton(title: "Mark Completed", color: .systemGreen, selector: #selector(markCompleted)),
-            chatButton // ✅ ADDED (no existing buttons touched)
+            chatButton
         ])
         actions.axis = .vertical
         actions.spacing = 10
@@ -95,6 +111,9 @@ final class TechnicianRequestDetailViewController: UIViewController {
             priorityLabel,
             locationLabel,
             dateLabel,
+            assignmentLabel,
+            warningLabel,
+            photoView,
             descriptionLabel,
             actions
         ]
@@ -135,6 +154,45 @@ final class TechnicianRequestDetailViewController: UIViewController {
 
         let descriptionText = request.description.isEmpty ? "No additional details." : request.description
         descriptionLabel.text = "Details:\n\(descriptionText)"
+
+        let assignedText: String
+        let sourceText: String
+        if CurrentUser.role == .technician,
+           let techID = CurrentUser.resolvedUserID(),
+           let assignedID = request.assignedTechnicianID {
+            assignedText = assignedID == techID ? "Assigned to you" : "Assigned to another technician"
+            let source = request.effectiveAssignmentSource
+            sourceText = source == .technician ? "You self-assigned this request." : "Assignment set by admin."
+        } else if request.assignedTechnicianID == nil {
+            assignedText = "Not assigned"
+            sourceText = "No assignment yet."
+        } else {
+            assignedText = "Assigned"
+            sourceText = "Assignment set by admin."
+        }
+        var techInfo = ""
+        if request.status == .active, let assignedID = request.assignedTechnicianID {
+            techInfo = "\nAssigned technician ID: \(assignedID)"
+        }
+        assignmentLabel.text = "\(assignedText)\n\(sourceText)\(techInfo)"
+
+        warningLabel.isHidden = true
+
+        imageTask?.cancel()
+        photoView.image = nil
+        photoView.isHidden = request.imageURL == nil
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+            imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data, let self else { return }
+                DispatchQueue.main.async {
+                    self.photoView.image = UIImage(data: data)
+                }
+            }
+            imageTask?.resume()
+        }
+
+        updateAssignmentUI()
     }
 
     private func makeActionButton(title: String, color: UIColor, selector: Selector) -> UIButton {
@@ -157,19 +215,54 @@ final class TechnicianRequestDetailViewController: UIViewController {
     }
 
     @objc private func assignToMe() {
-        guard let techID = CurrentUser.technicianID ?? CurrentUser.id else {
-            showAlert(title: "Missing Technician", message: "No technician ID available.")
+        guard CurrentUser.role == .technician else {
+            showAlert(title: "Wrong Role", message: "Only technicians can assign requests.")
             return
         }
+        guard let techID = CurrentUser.resolvedUserID() else {
+            showAlert(title: "Missing Technician", message: "No user ID available.")
+            return
+        }
+
+        if let currentAssignee = request.assignedTechnicianID {
+            if currentAssignee != techID {
+                showAlert(title: "Already Assigned", message: "This request is owned by another technician.")
+                return
+            }
+
+            if request.effectiveAssignmentSource == .technician {
+                request.assignedTechnicianID = nil
+                request.assignmentSource = nil
+                request.assignedByUserID = nil
+                request.scheduledTime = nil
+                request.status = .pending
+                store.updateRequest(request)
+                NotificationCenter.default.post(name: .technicianRequestsDidChange, object: nil)
+                refreshUI()
+                showAlert(title: "Unassigned", message: "You removed yourself from this request.")
+            } else {
+                showAlert(title: "Assignment Locked", message: "An admin assigned this request. Contact admin to change it.")
+            }
+            return
+        }
+
         request.assignedTechnicianID = techID
+        request.assignmentSource = .technician
+        request.assignedByUserID = techID
+        request.status = .assigned
         store.updateRequest(request)
         NotificationCenter.default.post(name: .technicianRequestsDidChange, object: nil)
         showAlert(title: "Assigned", message: "This job is now assigned to you.")
+        refreshUI()
     }
 
     @objc private func scheduleJob() {
-        guard let techID = CurrentUser.technicianID ?? CurrentUser.id else {
-            showAlert(title: "Missing Technician", message: "No technician ID available.")
+        guard let techID = CurrentUser.resolvedUserID() else {
+            showAlert(title: "Missing Technician", message: "No user ID available.")
+            return
+        }
+        guard CurrentUser.role == .technician else {
+            showAlert(title: "Wrong Role", message: "Only technicians can schedule requests.")
             return
         }
 
@@ -183,14 +276,14 @@ final class TechnicianRequestDetailViewController: UIViewController {
         picker.minimumDate = Date()
         picker.preferredDatePickerStyle = .wheels
 
-        let alert = UIAlertController(title: "Schedule Job", message: "\n\n\n\n\n\n\n", preferredStyle: .alert)
+        let alert = UIAlertController(title: "Schedule Job", message: "\n\n\n\n\n\n\n\n\n\n\n\n", preferredStyle: .alert)
         alert.view.addSubview(picker)
         picker.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             picker.leadingAnchor.constraint(equalTo: alert.view.leadingAnchor, constant: 8),
             picker.trailingAnchor.constraint(equalTo: alert.view.trailingAnchor, constant: -8),
-            picker.topAnchor.constraint(equalTo: alert.view.topAnchor, constant: 50),
-            picker.heightAnchor.constraint(equalToConstant: 200)
+            picker.topAnchor.constraint(equalTo: alert.view.topAnchor, constant: 40),
+            picker.heightAnchor.constraint(equalToConstant: 240)
         ])
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -215,7 +308,6 @@ final class TechnicianRequestDetailViewController: UIViewController {
         showAlert(title: "Status Updated", message: "Request marked as \(status.rawValue).")
     }
 
-    // ✅ ADDED CHAT NAVIGATION (no logic change elsewhere)
     @objc private func openChat() {
         let chatVC = ChatViewController(requestID: request.id)
         navigationController?.pushViewController(chatVC, animated: true)
@@ -232,5 +324,21 @@ final class TechnicianRequestDetailViewController: UIViewController {
         df.dateStyle = .medium
         df.timeStyle = .short
         return df.string(from: date)
+    }
+
+    private func updateAssignmentUI() {
+        let techID = CurrentUser.userID
+        let assignedToCurrent = techID != nil && request.assignedTechnicianID == techID
+        let assignedToOther = request.assignedTechnicianID != nil && !assignedToCurrent
+
+        warningLabel.isHidden = !assignedToOther
+        warningLabel.text = "Assigned to another technician. You cannot take it."
+
+        assignButton.isEnabled = !assignedToOther
+        assignButton.backgroundColor = assignedToCurrent ? .systemRed : (assignedToOther ? .systemGray4 : .systemBlue)
+        assignButton.setTitle(assignedToCurrent ? "Unassign" : "Assign to Me", for: .normal)
+
+        scheduleButton.isEnabled = assignedToCurrent
+        scheduleButton.alpha = assignedToCurrent ? 1 : 0.5
     }
 }

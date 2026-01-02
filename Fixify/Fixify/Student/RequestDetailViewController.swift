@@ -205,7 +205,7 @@ final class RequestDetailViewController: UIViewController {
         buttonStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         switch request.status {
-        case .pending:
+        case .pending, .assigned:
             buttonStack.addArrangedSubview(editButton)
             buttonStack.addArrangedSubview(cancelButton)
 

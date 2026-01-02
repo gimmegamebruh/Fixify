@@ -19,60 +19,32 @@ final class TechnicianTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "house.fill")
         )
 
-        let schedule = UINavigationController(
-            rootViewController: TechnicianScheduleViewController()
-        )
-        schedule.tabBarItem = UITabBarItem(
-            title: "Schedule",
-            image: UIImage(systemName: "calendar"),
-            selectedImage: UIImage(systemName: "calendar.circle.fill")
-        )
-
-        let history = UINavigationController(
-            rootViewController: TechnicianHistoryViewController()
-        )
-        history.tabBarItem = UITabBarItem(
-            title: "Completed",
-            image: UIImage(systemName: "checkmark.circle"),
-            selectedImage: UIImage(systemName: "checkmark.circle.fill")
-        )
-
-        // 🔥 NEW CHAT TAB
-        let chat = UINavigationController(
-            rootViewController: ChatListViewController()
-        )
-        chat.tabBarItem = UITabBarItem(
-            title: "Chat",
-            image: UIImage(systemName: "bubble.left"),
-            selectedImage: UIImage(systemName: "bubble.left.fill")
-        )
-
-        let notifications = UINavigationController(
-            rootViewController: TechnicianNotificationsViewController()
-        )
-
+        let notifications = UINavigationController(rootViewController: TechnicianNotificationsViewController())
         notifications.tabBarItem = UITabBarItem(
             title: "Notifications",
             image: UIImage(systemName: "bell"),
             selectedImage: UIImage(systemName: "bell.fill")
         )
 
-        let profile = UINavigationController(
-            rootViewController: SettingsViewController()
+        let chat = UINavigationController(rootViewController: ChatListViewController())
+        chat.tabBarItem = UITabBarItem(
+            title: "Chat",
+            image: UIImage(systemName: "bubble.left"),
+            selectedImage: UIImage(systemName: "bubble.left.fill")
         )
-        profile.tabBarItem = UITabBarItem(
-            title: "Profile",
-            image: UIImage(systemName: "person"),
-            selectedImage: UIImage(systemName: "person.fill")
+
+        let settings = UINavigationController(rootViewController: SettingsViewController())
+        settings.tabBarItem = UITabBarItem(
+            title: "Settings",
+            image: UIImage(systemName: "gearshape"),
+            selectedImage: UIImage(systemName: "gearshape.fill")
         )
 
         viewControllers = [
             dashboard,
-            schedule,
-            history,
-            chat,        
             notifications,
-            profile
+            chat,
+            settings
         ]
     }
 }
