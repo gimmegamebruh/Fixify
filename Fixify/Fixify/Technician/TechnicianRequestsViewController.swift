@@ -57,7 +57,7 @@ final class TechnicianRequestsViewController: UITableViewController {
 
     private var technicianUserID: String? {
         guard CurrentUser.role == .technician else { return nil }
-        return CurrentUser.userID
+        return CurrentUser.resolvedUserID()
     }
 
     private var filteredRequests: [Request] {

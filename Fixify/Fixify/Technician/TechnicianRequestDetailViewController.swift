@@ -158,7 +158,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
         let assignedText: String
         let sourceText: String
         if CurrentUser.role == .technician,
-           let techID = CurrentUser.userID,
+           let techID = CurrentUser.resolvedUserID(),
            let assignedID = request.assignedTechnicianID {
             assignedText = assignedID == techID ? "Assigned to you" : "Assigned to another technician"
             let source = request.effectiveAssignmentSource
@@ -219,7 +219,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
             showAlert(title: "Wrong Role", message: "Only technicians can assign requests.")
             return
         }
-        guard let techID = CurrentUser.userID else {
+        guard let techID = CurrentUser.resolvedUserID() else {
             showAlert(title: "Missing Technician", message: "No user ID available.")
             return
         }
@@ -257,7 +257,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
     }
 
     @objc private func scheduleJob() {
-        guard let techID = CurrentUser.userID else {
+        guard let techID = CurrentUser.resolvedUserID() else {
             showAlert(title: "Missing Technician", message: "No user ID available.")
             return
         }

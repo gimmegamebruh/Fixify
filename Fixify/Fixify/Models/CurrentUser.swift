@@ -77,6 +77,18 @@ enum CurrentUser {
         technicianID = nil
     }
 
+    /// Returns a non-nil user ID if possible, falling back to Firebase Auth if the cached value was cleared.
+    static func resolvedUserID() -> String? {
+        if let userID {
+            return userID
+        }
+        if let uid = Auth.auth().currentUser?.uid {
+            userID = uid
+            return uid
+        }
+        return nil
+    }
+
     // MARK: - Debug
     private static func debugPrintSession() {
         print("""

@@ -25,6 +25,13 @@ final class TechnicianNotificationsViewController: UITableViewController {
             forCellReuseIdentifier: TechnicianNotificationCell.reuseID
         )
 
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Mark All as Read",
+            style: .plain,
+            target: self,
+            action: #selector(clearAll)
+        )
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(reload),
@@ -33,6 +40,11 @@ final class TechnicianNotificationsViewController: UITableViewController {
         )
 
         reload()
+    }
+
+    @objc private func clearAll() {
+        notifications.removeAll()
+        tableView.reloadData()
     }
 
     @objc private func reload() {
