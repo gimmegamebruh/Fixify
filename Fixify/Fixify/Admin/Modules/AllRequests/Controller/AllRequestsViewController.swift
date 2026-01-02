@@ -5,6 +5,9 @@ final class AllRequestsViewController: UIViewController {
     private let viewModel = AllRequestsViewModel()
     private var displayedRequests: [Request] = []
 
+    private var currentFilter: RequestFilter = .allTime
+    private var filterDropdown: FilterDropdownView?
+
     private let tableView = UITableView()
 
     override func viewDidLoad() {
@@ -13,6 +16,7 @@ final class AllRequestsViewController: UIViewController {
         title = "All Requests"
         view.backgroundColor = .systemGroupedBackground
 
+        setupFilterButton()
         setupTableView()
 
         NotificationCenter.default.addObserver(
@@ -29,10 +33,50 @@ final class AllRequestsViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
+    // MARK: - Filter Button
+
+    private func setupFilterButton() {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Filter",
+            style: .plain,
+            target: self,
+            action: #selector(toggleFilterDropdown)
+        )
+    }
+
+    @objc private func toggleFilterDropdown() {
+
+        // If already visible → hide
+        if let dropdown = filterDropdown {
+            dropdown.removeFromSuperview()
+            filterDropdown = nil
+            return
+        }
+
+        let dropdown = FilterDropdownView()
+        dropdown.onSelectFilter = { [weak self] filter in
+            self?.currentFilter = filter
+            self?.filterDropdown?.removeFromSuperview()
+            self?.filterDropdown = nil
+            self?.reload()
+        }
+
+        view.addSubview(dropdown)
+        dropdown.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            dropdown.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            dropdown.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            dropdown.widthAnchor.constraint(equalToConstant: 200)
+        ])
+
+        filterDropdown = dropdown
+    }
+
     // MARK: - Reload
 
     @objc private func reload() {
-        displayedRequests = viewModel.allRequests
+        displayedRequests = viewModel.filtered(currentFilter) // ✅ CHANGED
         tableView.reloadData()
     }
 
@@ -64,7 +108,6 @@ final class AllRequestsViewController: UIViewController {
 
     private func confirmEscalation(for request: Request) {
 
-        // Prevent invalid escalation
         guard request.status != .completed,
               request.status != .cancelled,
               request.status != .escalated
@@ -93,7 +136,6 @@ final class AllRequestsViewController: UIViewController {
 
 extension AllRequestsViewController: UITableViewDataSource {
 
-    // ✅ FIXED TYPO HERE (UITableViewView → UITableView)
     func tableView(
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
@@ -114,14 +156,12 @@ extension AllRequestsViewController: UITableViewDataSource {
         let request = displayedRequests[indexPath.row]
         cell.configure(with: request)
 
-        // ASSIGN (unchanged)
         cell.onAssignTap = { [weak self] in
             guard request.status.canAssignTechnician else { return }
             let vc = AssignTechnicianViewController(requestID: request.id)
             self?.navigationController?.pushViewController(vc, animated: true)
         }
 
-        // 🔥 ESCALATE (NEW, minimal)
         cell.onEscalateTap = { [weak self] in
             self?.confirmEscalation(for: request)
         }

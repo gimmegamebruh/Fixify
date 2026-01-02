@@ -15,6 +15,22 @@ final class AdminDashboardViewController: UIViewController {
     private let cardsStack = UIStackView()
     private let escalatedCountLabel = UILabel()
 
+    private let totalCard =
+        StatCardView(title: "Total Requests", value: "0")
+
+    private let completedCard =
+        StatCardView(title: "Completed", value: "0")
+
+    private let pendingCard =
+        StatCardView(title: "Pending", value: "0")
+
+    private let avgCard =
+        StatCardView(
+            title: "Avg Time",
+            value: "0d",
+            highlighted: true
+        )
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -23,6 +39,7 @@ final class AdminDashboardViewController: UIViewController {
 
         setupScroll()
         setupUI()
+        updateStats() 
 
         NotificationCenter.default.addObserver(
             self,
@@ -36,15 +53,23 @@ final class AdminDashboardViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Updates
+    // MARK: - Data Updates
 
     @objc private func dataDidChange() {
         DispatchQueue.main.async {
+            self.updateStats()
             self.rebuildEscalatedCards()
         }
     }
 
-    // MARK: - Scroll
+    private func updateStats() {
+        totalCard.updateValue("\(viewModel.totalRequests)")
+        completedCard.updateValue("\(viewModel.completedRequests)")
+        pendingCard.updateValue("\(viewModel.pendingRequests)")
+        avgCard.updateValue(viewModel.averageCompletionText)
+    }
+
+    // MARK: - Scroll Setup
 
     private func setupScroll() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -68,34 +93,13 @@ final class AdminDashboardViewController: UIViewController {
         ])
     }
 
-    // MARK: - UI
+    // MARK: - UI Setup
 
     private func setupUI() {
 
-        let total = StatCardView(
-            title: "Total Requests",
-            value: "\(viewModel.totalRequests)"
-        )
-
-        let completed = StatCardView(
-            title: "Completed",
-            value: "\(viewModel.completedRequests)"
-        )
-
-        let pending = StatCardView(
-            title: "Pending",
-            value: "\(viewModel.pendingRequests)"
-        )
-
-        let avg = StatCardView(
-            title: "Avg Time",
-            value: viewModel.averageCompletionText,
-            highlighted: true
-        )
-
         let statsGrid = UIStackView(arrangedSubviews: [
-            makeRow(total, completed),
-            makeRow(pending, avg)
+            makeRow(totalCard, completedCard),
+            makeRow(pendingCard, avgCard)
         ])
         statsGrid.axis = .vertical
         statsGrid.spacing = 16
@@ -116,7 +120,6 @@ final class AdminDashboardViewController: UIViewController {
             for: .touchUpInside
         )
 
-        // 🔥 NEW FEATURE BUTTON
         let issuePatterns = primaryButton("Issue Pattern Analytics")
         issuePatterns.addTarget(
             self,
@@ -134,7 +137,7 @@ final class AdminDashboardViewController: UIViewController {
             addTech,
             inventory,
             metrics,
-            issuePatterns,   // ✅ NEW
+            issuePatterns,
             header,
             cardsStack
         ])
@@ -186,7 +189,9 @@ final class AdminDashboardViewController: UIViewController {
         escalatedCountLabel.text =
             "Escalated Requests (\(viewModel.escalatedRequests.count))"
 
-        cardsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        cardsStack.arrangedSubviews.forEach {
+            $0.removeFromSuperview()
+        }
 
         viewModel.escalatedRequests.forEach { request in
             let card = EscalatedRequestCard(request: request)
@@ -201,8 +206,8 @@ final class AdminDashboardViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func manageInventoryTapped() {
-        let invvc = InventoryManagmentViewController()
-        navigationController?.pushViewController(invvc, animated: true)
+        let vc = InventoryManagmentViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func viewAllTapped() {
@@ -215,7 +220,6 @@ final class AdminDashboardViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    // 🔥 NEW
     @objc private func viewIssuePatternsTapped() {
         let vc = IssuePatternViewController()
         navigationController?.pushViewController(vc, animated: true)
