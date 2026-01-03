@@ -25,12 +25,7 @@ final class StudentNotificationsViewController: UITableViewController {
             forCellReuseIdentifier: StudentNotificationCell.reuseID
         )
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Mark All as Read",
-            style: .plain,
-            target: self,
-            action: #selector(clearAll)
-        )
+      
 
         NotificationCenter.default.addObserver(
             self,
@@ -136,14 +131,6 @@ final class StudentNotificationsViewController: UITableViewController {
         return cell
     }
 
-    override func tableView(
-        _: UITableView,
-        didSelectRowAt indexPath: IndexPath
-    ) {
-        let n = notifications[indexPath.row]
-        let vc = RequestDetailViewController(requestID: n.requestID)
-        navigationController?.pushViewController(vc, animated: true)
-    }
 
     // MARK: - Helpers
 

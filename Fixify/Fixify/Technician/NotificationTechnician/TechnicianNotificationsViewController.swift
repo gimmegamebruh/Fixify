@@ -25,13 +25,7 @@ final class TechnicianNotificationsViewController: UITableViewController {
             forCellReuseIdentifier: TechnicianNotificationCell.reuseID
         )
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Mark All as Read",
-            style: .plain,
-            target: self,
-            action: #selector(clearAll)
-        )
-
+        
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(reload),

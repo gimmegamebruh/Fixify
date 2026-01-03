@@ -25,12 +25,6 @@ final class AdminNotificationsViewController: UITableViewController {
             forCellReuseIdentifier: AdminNotificationCell.reuseID
         )
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Mark All as Read",
-            style: .plain,
-            target: self,
-            action: #selector(markAllRead)
-        )
 
         NotificationCenter.default.addObserver(
             self,
@@ -99,11 +93,7 @@ final class AdminNotificationsViewController: UITableViewController {
         return result.sorted { $0.date > $1.date }
     }
 
-    @objc private func markAllRead() {
-        // UI-only reset (acceptable for coursework)
-        notifications.removeAll()
-        tableView.reloadData()
-    }
+ 
 
     // MARK: - Table
 
@@ -139,10 +129,5 @@ final class AdminNotificationsViewController: UITableViewController {
         didSelectRowAt indexPath: IndexPath
     ) {
         let notification = notifications[indexPath.row]
-
-        if let request = store.requests.first(where: { $0.id == notification.id.prefix(while: { $0 != "_" }) }) {
-            let vc = AssignTechnicianViewController(requestID: request.id)
-            navigationController?.pushViewController(vc, animated: true)
-        }
     }
 }
