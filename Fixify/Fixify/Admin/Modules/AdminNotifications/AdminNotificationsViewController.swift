@@ -124,10 +124,4 @@ final class AdminNotificationsViewController: UITableViewController {
         return cell
     }
 
-    override func tableView(
-        _: UITableView,
-        didSelectRowAt indexPath: IndexPath
-    ) {
-        let notification = notifications[indexPath.row]
-    }
 }

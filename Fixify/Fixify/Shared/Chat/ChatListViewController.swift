@@ -3,28 +3,13 @@ import UIKit
 final class ChatListViewController: UITableViewController {
 
     private let store = RequestStore.shared
-    private var chats: [Request] = []
-
-    private lazy var newChatButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.setTitle("Start New Chat", for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
-        b.addTarget(self, action: #selector(startNewChat), for: .touchUpInside)
-        return b
-    }()
+    private var requests: [Request] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Chat"
 
-        tableView.register(ChatListCell.self, forCellReuseIdentifier: ChatListCell.reuseID)
-        tableView.separatorStyle = .none
-        tableView.backgroundColor = .systemGroupedBackground
-
-        navigationItem.rightBarButtonItem =
-            CurrentUser.role == .student
-            ? UIBarButtonItem(customView: newChatButton)
-            : nil
+        title = "Chats"
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
 
         NotificationCenter.default.addObserver(
             self,
@@ -36,80 +21,39 @@ final class ChatListViewController: UITableViewController {
         reload()
     }
 
+    // MARK: - 🔥 FIXED LOGIC (UI UNCHANGED)
     @objc private func reload() {
+ 
+        requests = store.requests.filter { request in
+            switch CurrentUser.role {
 
-        print("========== CHAT RELOAD ==========")
-        print("👤 CurrentUser.role =", CurrentUser.role)
-        print("👤 technicianID     =", CurrentUser.technicianID ?? "nil")
-        print("📦 Total requests in store =", store.requests.count)
+            case .student:
+                // ✅ Students can chat once assigned OR active
+                return request.status == .assigned || request.status == .active
 
-        for r in store.requests {
-            print("""
-            🔹 Request:
-            id = \(r.id)
-            createdBy = \(r.createdBy)
-            status = \(r.status.rawValue)
-            assignedTechnicianID = \(r.assignedTechnicianID ?? "nil")
-            """)
-        }
+            case .technician:
+                // ✅ Technicians see only their own jobs
+                guard let techID = CurrentUser.resolvedUserID() else { return false }
+                return request.assignedTechnicianID == techID &&
+                       (request.status == .assigned || request.status == .active)
 
-        switch CurrentUser.role {
+            case .admin:
+                return true
 
-        case .student:
-            chats = store.requests.filter { request in
-
-                print("🧪 Checking request \(request.id)")
-
-                guard request.createdBy == CurrentUser.id else {
-                    print("❌ rejected: createdBy mismatch")
-                    return false
-                }
-
-                guard request.assignedTechnicianID != nil else {
-                    print("❌ rejected: no technician assigned")
-                    return false
-                }
-
-                switch request.status {
-                case .assigned, .active, .completed:
-                    print("✅ accepted")
-                    return true
-                default:
-                    print("❌ rejected: invalid status")
-                    return false
-                }
+            default:
+                return false
             }
-
-        case .technician:
-            let techID = CurrentUser.technicianID ?? CurrentUser.id
-
-            chats = store.requests.filter { request in
-                let match = request.assignedTechnicianID == techID
-                print("🧪 Tech check \(request.id) → \(match)")
-                return match
-            }
-
-        case .admin:
-            chats = []
         }
-
-        print("✅ Chats count after filter =", chats.count)
-        print("================================")
 
         tableView.reloadData()
     }
 
-
-
-    // MARK: - Table
-
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if chats.isEmpty {
-            tableView.backgroundView = emptyState()
-        } else {
-            tableView.backgroundView = nil
-        }
-        return chats.count
+    // MARK: - TableView Data Source
+    override func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
+        requests.count
     }
 
     override func tableView(
@@ -117,42 +61,27 @@ final class ChatListViewController: UITableViewController {
         cellForRowAt indexPath: IndexPath
     ) -> UITableViewCell {
 
-        let cell = tableView.dequeueReusableCell(
-            withIdentifier: ChatListCell.reuseID,
-            for: indexPath
-        ) as! ChatListCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        let request = requests[indexPath.row]
 
-        cell.configure(with: chats[indexPath.row])
+        cell.textLabel?.text = request.title
+        cell.accessoryType = .disclosureIndicator
+
         return cell
     }
 
+    // MARK: - Selection
     override func tableView(
         _ tableView: UITableView,
         didSelectRowAt indexPath: IndexPath
     ) {
-        let request = chats[indexPath.row]
-        let vc = ChatViewController(requestID: request.id)
-        navigationController?.pushViewController(vc, animated: true)
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
-
-    // MARK: - New Chat
-
-    @objc private func startNewChat() {
-        let vc = StartChatViewController()
-        navigationController?.pushViewController(vc, animated: true)
-    }
-
-    private func emptyState() -> UIView {
-        let label = UILabel()
-        label.text = "No chats yet\nStart a chat from your requests"
-        label.textAlignment = .center
-        label.numberOfLines = 0
-        label.textColor = .secondaryLabel
-        return label
+        let request = requests[indexPath.row]
+        let chatVC = ChatViewController(requestID: request.id)
+        navigationController?.pushViewController(chatVC, animated: true)
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
 }
+

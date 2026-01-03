@@ -205,22 +205,23 @@ final class RequestDetailViewController: UIViewController {
         buttonStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         switch request.status {
-        case .pending, .assigned:
+
+        case .pending:
             buttonStack.addArrangedSubview(editButton)
             buttonStack.addArrangedSubview(cancelButton)
+
+        case .assigned, .active:
+            buttonStack.addArrangedSubview(chatButton)
 
         case .completed:
             if request.rating == nil {
                 buttonStack.addArrangedSubview(rateButton)
             }
 
-        case .active:
-            // ✅ Chat allowed while active
-            buttonStack.addArrangedSubview(chatButton)
-
         default:
             break
         }
+
     }
 
     // MARK: - Actions

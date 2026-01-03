@@ -2,9 +2,6 @@
 //  ChatService.swift
 //  Fixify
 //
-//  Created by BP-36-213-15 on 25/12/2025.
-//
-
 
 import FirebaseFirestore
 
@@ -15,6 +12,7 @@ final class ChatService {
 
     private init() {}
 
+    // MARK: - Listen to chat messages
     func listen(
         requestID: String,
         completion: @escaping ([ChatMessage]) -> Void
@@ -33,8 +31,13 @@ final class ChatService {
             }
     }
 
+    // MARK: - Send message (🔥 FIX INCLUDED)
     func send(requestID: String, text: String) {
-        guard let senderId = CurrentUser.id else { return }
+        // 1️⃣ CHANGE THIS: Use the resolved ID instead of the static property
+        guard let senderId = CurrentUser.resolvedUserID() else {
+            print("DEBUG: Send failed because senderId is nil")
+            return
+        }
 
         let data: [String: Any] = [
             "text": text,
@@ -43,9 +46,20 @@ final class ChatService {
             "timestamp": FieldValue.serverTimestamp()
         ]
 
-        db.collection("requests")
-            .document(requestID)
+        let requestRef = db.collection("requests").document(requestID)
+
+        // 2️⃣ Send chat message
+        requestRef
             .collection("chat")
-            .addDocument(data: data)
+            .addDocument(data: data) { error in
+                if let error = error {
+                    print("DEBUG: Firestore Error: \(error.localizedDescription)")
+                }
+            }
+
+        // 3️⃣ Activate request
+        requestRef.updateData([
+            "status": RequestStatus.active.rawValue
+        ])
     }
 }

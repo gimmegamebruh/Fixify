@@ -41,9 +41,9 @@ final class StudentTabBarController: UITabBarController {
             rootViewController: SettingsViewController()
         )
         profile.tabBarItem = UITabBarItem(
-            title: "Profile",
-            image: UIImage(systemName: "person"),
-            selectedImage: UIImage(systemName: "person.fill")
+            title: "Settings",
+            image: UIImage(systemName: "gearshape"),
+            selectedImage: UIImage(systemName: "gearshape.fill")
         )
 
         viewControllers = [home, notifications, chat, profile]

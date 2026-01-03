@@ -43,9 +43,9 @@ final class AdminTabBarController: UITabBarController {
             rootViewController: SettingsViewController()
         )
         profileVC.tabBarItem = UITabBarItem(
-            title: "Profile",
-            image: UIImage(systemName: "person"),
-            selectedImage: UIImage(systemName: "person.fill")
+            title: "Settings",
+            image: UIImage(systemName: "gearshape"),
+            selectedImage: UIImage(systemName: "gearshape.fill")
         )
 
         viewControllers = [
