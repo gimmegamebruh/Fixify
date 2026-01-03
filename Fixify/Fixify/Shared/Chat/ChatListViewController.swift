@@ -9,7 +9,14 @@ final class ChatListViewController: UITableViewController {
         super.viewDidLoad()
 
         title = "Chats"
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableView.register(
+            ChatListCell.self,
+            forCellReuseIdentifier: ChatListCell.reuseID
+        )
+
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .systemGroupedBackground
+
 
         NotificationCenter.default.addObserver(
             self,
@@ -61,13 +68,16 @@ final class ChatListViewController: UITableViewController {
         cellForRowAt indexPath: IndexPath
     ) -> UITableViewCell {
 
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        let request = requests[indexPath.row]
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: ChatListCell.reuseID,
+            for: indexPath
+        ) as! ChatListCell
 
-        cell.textLabel?.text = request.title
-        cell.accessoryType = .disclosureIndicator
+        let request = requests[indexPath.row]
+        cell.configure(with: request)
 
         return cell
+
     }
 
     // MARK: - Selection

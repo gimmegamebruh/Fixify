@@ -19,7 +19,6 @@ final class AdminTabBarController: UITabBarController {
             selectedImage: UIImage(systemName: "house.fill")
         )
 
-        // 🔥 ADMIN REQUESTS (REAL)
         let requestsVC = UINavigationController(
             rootViewController: AllRequestsViewController()
         )

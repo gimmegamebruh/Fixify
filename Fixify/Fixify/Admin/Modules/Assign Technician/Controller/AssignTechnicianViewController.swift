@@ -106,7 +106,21 @@ extension AssignTechnicianViewController: UITableViewDataSource {
             self.viewModel.assignTechnician(technician) { success in
                 DispatchQueue.main.async {
                     if success {
-                        self.navigationController?.popViewController(animated: true)
+
+                        let alert = UIAlertController(
+                            title: "Assigned Successfully",
+                            message: "The technician has been assigned to this request✅",
+                            preferredStyle: .alert
+                        )
+
+                        alert.addAction(
+                            UIAlertAction(title: "OK", style: .default) { _ in
+                                self.navigationController?.popViewController(animated: true)
+                            }
+                        )
+
+                        self.present(alert, animated: true)
+
                     } else {
                         self.showError(
                             "Technician could not be assigned. Request may be locked."
@@ -114,6 +128,7 @@ extension AssignTechnicianViewController: UITableViewDataSource {
                     }
                 }
             }
+
         }
 
         return cell
