@@ -1,31 +1,49 @@
 import UIKit
 import PhotosUI
 
+// This view controller allows the student to create a new maintenance request
+// The student fills the form, selects priority/category, and can upload one photo
 final class NewRequestViewController: UIViewController {
 
     // MARK: - Dependencies
+
+    // Shared store used to save the new request
     private let store = RequestStore.shared
-    // MARK: - UI
+
+    // MARK: - UI Elements
+
+    // Scroll view to allow scrolling when content is long
     private let scrollView = UIScrollView()
+
+    // Stack view to arrange all UI elements vertically
     private let stack = UIStackView()
 
+    // Input fields
     private let titleField = UITextField()
     private let locationField = UITextField()
     private let priorityField = UITextField()
     private let categoryField = UITextField()
     private let descriptionView = UITextView()
 
+    // Photo related UI
     private let addPhotoButton = UIButton(type: .system)
     private let photosScroll = UIScrollView()
     private let photosStack = UIStackView()
 
+    // Submit button
     private let submitButton = UIButton(type: .system)
 
-    // MARK: - Image
+    // MARK: - Image Data
+
+    // Stores the selected image from photo picker
     private var selectedImage: UIImage?
 
     // MARK: - Picker Data
+
+    // Available priorities
     private let priorities = ["Low", "Medium", "High", "Urgent"]
+
+    // Available categories
     private let categories = [
         "AC Issue",
         "Electrical",
@@ -35,29 +53,40 @@ final class NewRequestViewController: UIViewController {
         "Other"
     ]
 
+    // Picker views
     private let priorityPicker = UIPickerView()
     private let categoryPicker = UIPickerView()
 
     // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Basic screen setup
         view.backgroundColor = .systemBackground
         title = "New Request"
 
+        // Setup UI and layout
         setupScroll()
         setupFields()
         setupPickers()
         setupLayout()
-        setDefaultPickerValues() // ✅ IMPORTANT
+
+        // Set default picker values to avoid empty selection
+        setDefaultPickerValues()
     }
 
-    // MARK: - Defaults (FIX)
+    // MARK: - Default Values
+
+    // Sets default values for priority and category
     private func setDefaultPickerValues() {
         priorityField.text = priorities.first
         categoryField.text = categories.first
     }
 
-    // MARK: - Setup Scroll
+    // MARK: - Scroll Setup
+
+    // Configures scroll view and stack view
     private func setupScroll() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
@@ -81,23 +110,29 @@ final class NewRequestViewController: UIViewController {
         ])
     }
 
-    // MARK: - Setup Fields
+    // MARK: - Field Setup
+
+    // Configures all text fields, buttons, and photo preview area
     private func setupFields() {
+
         configureTextField(titleField, "Title")
         configureTextField(locationField, "Location")
         configureTextField(priorityField, "Select Priority")
         configureTextField(categoryField, "Select Category")
 
+        // Description text view styling
         descriptionView.font = .systemFont(ofSize: 16)
         descriptionView.layer.borderColor = UIColor.systemGray4.cgColor
         descriptionView.layer.borderWidth = 1
         descriptionView.layer.cornerRadius = 8
         descriptionView.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
+        // Add photo button
         addPhotoButton.setTitle("Add Photo", for: .normal)
         addPhotoButton.contentHorizontalAlignment = .leading
         addPhotoButton.addTarget(self, action: #selector(addPhotoTapped), for: .touchUpInside)
 
+        // Horizontal scroll for image preview
         photosScroll.heightAnchor.constraint(equalToConstant: 140).isActive = true
         photosScroll.showsHorizontalScrollIndicator = false
 
@@ -114,6 +149,7 @@ final class NewRequestViewController: UIViewController {
             photosStack.heightAnchor.constraint(equalTo: photosScroll.heightAnchor)
         ])
 
+        // Submit button styling
         submitButton.setTitle("Submit Request", for: .normal)
         submitButton.backgroundColor = .systemBlue
         submitButton.tintColor = .white
@@ -122,7 +158,9 @@ final class NewRequestViewController: UIViewController {
         submitButton.addTarget(self, action: #selector(submitTapped), for: .touchUpInside)
     }
 
-    // MARK: - Setup Pickers
+    // MARK: - Picker Setup
+
+    // Setup picker views for priority and category
     private func setupPickers() {
         priorityPicker.delegate = self
         priorityPicker.dataSource = self
@@ -136,6 +174,7 @@ final class NewRequestViewController: UIViewController {
         categoryField.inputAccessoryView = pickerToolbar()
     }
 
+    // Toolbar with Done button for pickers
     private func pickerToolbar() -> UIToolbar {
         let tb = UIToolbar()
         tb.sizeToFit()
@@ -146,11 +185,14 @@ final class NewRequestViewController: UIViewController {
         return tb
     }
 
+    // Closes picker
     @objc private func dismissPicker() {
         view.endEditing(true)
     }
 
     // MARK: - Layout
+
+    // Adds all UI elements to stack view
     private func setupLayout() {
         [
             titleField,
@@ -164,12 +206,15 @@ final class NewRequestViewController: UIViewController {
         ].forEach { stack.addArrangedSubview($0) }
     }
 
-    // MARK: - Helpers
+    // MARK: - Helper Methods
+
+    // Simple helper to configure text fields
     private func configureTextField(_ tf: UITextField, _ placeholder: String) {
         tf.placeholder = placeholder
         tf.borderStyle = .roundedRect
     }
 
+    // Shows alert message to the user
     private func showAlert(_ message: String) {
         let alert = UIAlertController(
             title: "Missing Info",
@@ -180,15 +225,18 @@ final class NewRequestViewController: UIViewController {
         present(alert, animated: true)
     }
 
-    // MARK: - Submit
+    // MARK: - Submit Request
+
+    // Called when submit button is tapped
     @objc private func submitTapped() {
 
-        // Try cached ID first, fall back to Firebase session to avoid false "not logged in" alerts.
+        // Get current logged-in user ID
         guard let userID = CurrentUser.resolvedUserID() else {
             showAlert("User not logged in.")
             return
         }
 
+        // Validate all required fields
         guard
             let title = titleField.text?.trimmingCharacters(in: .whitespaces), !title.isEmpty,
             let location = locationField.text?.trimmingCharacters(in: .whitespaces), !location.isEmpty,
@@ -203,6 +251,7 @@ final class NewRequestViewController: UIViewController {
         let requestID = UUID().uuidString
         let priority = RequestPriority(rawValue: priorityText.lowercased()) ?? .low
 
+        // Creates and saves the request
         func createRequest(imageURL: String?) {
             let request = Request(
                 id: requestID,
@@ -227,6 +276,7 @@ final class NewRequestViewController: UIViewController {
             self.navigationController?.popViewController(animated: true)
         }
 
+        // Upload image if user selected one
         if let image = selectedImage {
             CloudinaryUploadService.shared.upload(image: image) { url in
                 DispatchQueue.main.async {
@@ -238,7 +288,9 @@ final class NewRequestViewController: UIViewController {
         }
     }
 
-    // MARK: - Photo
+    // MARK: - Photo Selection
+
+    // Opens photo picker
     @objc private func addPhotoTapped() {
         var config = PHPickerConfiguration()
         config.selectionLimit = 1
@@ -250,9 +302,11 @@ final class NewRequestViewController: UIViewController {
     }
     
     // MARK: - Photo Preview
+
+    // Shows selected photo in scroll view
     private func updatePhotoPreview(_ image: UIImage) {
 
-        // Remove old previews
+        // Remove previous images
         photosStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         let imageView = UIImageView(image: image)
@@ -270,31 +324,28 @@ final class NewRequestViewController: UIViewController {
 
         photosStack.addArrangedSubview(imageView)
     }
-
 }
 
-// MARK: - Pickers
+// MARK: - Picker Delegates
+
 extension NewRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource {
 
     func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
 
-    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+    func pickerView(_ pickerView: UIPickerView,
+                    numberOfRowsInComponent component: Int) -> Int {
         pickerView == priorityPicker ? priorities.count : categories.count
     }
 
     func pickerView(_ pickerView: UIPickerView,
-        titleForRow row: Int,
-        forComponent component: Int) -> String? {
-        pickerView == priorityPicker
-        ? priorities[row]
-        : categories[row]
+                    titleForRow row: Int,
+                    forComponent component: Int) -> String? {
+        pickerView == priorityPicker ? priorities[row] : categories[row]
     }
 
-    func pickerView(
-        _ pickerView: UIPickerView,
-        didSelectRow row: Int,
-        inComponent component: Int
-    ) {
+    func pickerView(_ pickerView: UIPickerView,
+                    didSelectRow row: Int,
+                    inComponent component: Int) {
         if pickerView == priorityPicker {
             priorityField.text = priorities[row]
         } else {
@@ -303,10 +354,13 @@ extension NewRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource
     }
 }
 
-// MARK: - Photo Picker
+// MARK: - Photo Picker Delegate
+
 extension NewRequestViewController: PHPickerViewControllerDelegate {
 
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+    func picker(_ picker: PHPickerViewController,
+                didFinishPicking results: [PHPickerResult]) {
+
         picker.dismiss(animated: true)
 
         guard let provider = results.first?.itemProvider,
