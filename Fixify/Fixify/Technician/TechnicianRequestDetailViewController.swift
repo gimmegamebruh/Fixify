@@ -18,6 +18,8 @@ final class TechnicianRequestDetailViewController: UIViewController {
     private let assignButton = UIButton(type: .system)
     private let scheduleButton = UIButton(type: .system)
     private let chatButton = UIButton(type: .system)
+    private let markActiveButton = UIButton(type: .system)
+    private let markCompletedButton = UIButton(type: .system)
     private var imageTask: URLSessionDataTask?
 
     init(request: Request) {
@@ -96,11 +98,14 @@ final class TechnicianRequestDetailViewController: UIViewController {
         chatButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
         chatButton.addTarget(self, action: #selector(openChat), for: .touchUpInside)
 
+        configureActionButton(markActiveButton, title: "Mark In Progress", color: .systemBlue, action: #selector(markActive))
+        configureActionButton(markCompletedButton, title: "Mark Completed", color: .systemGreen, action: #selector(markCompleted))
+
         let actions = UIStackView(arrangedSubviews: [
             assignButton,
             scheduleButton,
-            makeActionButton(title: "Mark In Progress", color: .systemBlue, selector: #selector(markActive)),
-            makeActionButton(title: "Mark Completed", color: .systemGreen, selector: #selector(markCompleted)),
+            markActiveButton,
+            markCompletedButton,
             chatButton
         ])
         actions.axis = .vertical
@@ -195,23 +200,29 @@ final class TechnicianRequestDetailViewController: UIViewController {
         updateAssignmentUI()
     }
 
-    private func makeActionButton(title: String, color: UIColor, selector: Selector) -> UIButton {
-        let button = UIButton(type: .system)
+    private func configureActionButton(_ button: UIButton, title: String, color: UIColor, action: Selector) {
         button.setTitle(title, for: .normal)
         button.backgroundColor = color
         button.tintColor = .white
         button.layer.cornerRadius = 10
         button.heightAnchor.constraint(equalToConstant: 48).isActive = true
-        button.addTarget(self, action: selector, for: .touchUpInside)
-        return button
+        button.addTarget(self, action: action, for: .touchUpInside)
     }
 
     @objc private func markActive() {
+        guard userIsAssignedToRequest else {
+            showAlert(title: "Assign first", message: "Assign this job to yourself before updating status.")
+            return
+        }
         updateStatus(.active)
         showAlert(title: "Status Updated", message: "Request marked as active.")
     }
 
     @objc private func markCompleted() {
+        guard userIsAssignedToRequest else {
+            showAlert(title: "Assign first", message: "Assign this job to yourself before updating status.")
+            return
+        }
         // Navigate to products screen without updating status yet
         let productsVC = ProductsUsedViewController(requestId: request.id)
         
@@ -339,6 +350,7 @@ final class TechnicianRequestDetailViewController: UIViewController {
         let techID = CurrentUser.userID
         let assignedToCurrent = techID != nil && request.assignedTechnicianID == techID
         let assignedToOther = request.assignedTechnicianID != nil && !assignedToCurrent
+        let canActOnStatus = assignedToCurrent
 
         warningLabel.isHidden = !assignedToOther
         warningLabel.text = "Assigned to another technician. You cannot take it."
@@ -349,5 +361,14 @@ final class TechnicianRequestDetailViewController: UIViewController {
 
         scheduleButton.isEnabled = assignedToCurrent
         scheduleButton.alpha = assignedToCurrent ? 1 : 0.5
+        markActiveButton.isEnabled = canActOnStatus
+        markActiveButton.alpha = canActOnStatus ? 1 : 0.5
+        markCompletedButton.isEnabled = canActOnStatus
+        markCompletedButton.alpha = canActOnStatus ? 1 : 0.5
+    }
+
+    private var userIsAssignedToRequest: Bool {
+        guard let techID = CurrentUser.userID else { return false }
+        return request.assignedTechnicianID == techID
     }
 }
