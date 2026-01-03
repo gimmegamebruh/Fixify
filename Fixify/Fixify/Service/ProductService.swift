@@ -34,7 +34,7 @@ final class ProductService {
                 return
             }
 
-            // ✅ ID is unique
+            // ID is unique
             let productData: [String: Any] = [
                 "id": id,
                 "name": name,
