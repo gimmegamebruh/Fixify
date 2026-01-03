@@ -1,60 +1,83 @@
 import UIKit
 
+// This screen shows the full details of a maintenance request
+// Student can see status, image, rating, and perform actions like edit, cancel, rate, or chat
 final class RequestDetailViewController: UIViewController {
 
     // MARK: - Dependencies
+
+    // Shared store that contains all requests
     private let store = RequestStore.shared
+
+    // ID of the request to display
     private let requestID: String
 
-    // MARK: - UI
+    // MARK: - UI Elements
+
+    // Scroll view to allow scrolling if content is long
     private let scrollView = UIScrollView()
+
+    // Stack view to hold all content vertically
     private let contentStack = UIStackView()
 
+    // Card container for request details
     private let cardView = UIView()
 
+    // Labels for request information
     private let titleLabel = UILabel()
     private let locationLabel = UILabel()
     private let priorityLabel = UILabel()
     private let dateLabel = UILabel()
     private let statusBadge = StatusBadgeView()
 
+    // Image view to show request photo
     private let imageView = UIImageView()
 
-    // ⭐ Rating UI
+    // ⭐ Rating display UI
     private let ratingLabel = UILabel()
     private let commentLabel = UILabel()
 
-    // Buttons
+    // Action buttons
     private let editButton = UIFactory.primaryButton(title: "Edit")
     private let cancelButton = UIFactory.secondaryButton(title: "Cancel")
     private let rateButton = UIFactory.primaryButton(title: "Rate")
 
-    // ✅ ADDED (safe)
+    // Chat button (shown when request is assigned or active)
     private let chatButton = UIFactory.secondaryButton(title: "Chat")
 
+    // Stack view for buttons
     private let buttonStack = UIStackView()
 
-    // MARK: - Init
+    // MARK: - Initializer
+
+    // Custom initializer receives request ID
     init(requestID: String) {
         self.requestID = requestID
         super.init(nibName: nil, bundle: nil)
     }
 
+    // Required initializer (not used)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Basic screen setup
         view.backgroundColor = DS.Color.groupedBg
         title = "Request Details"
 
+        // Setup UI and load request data
         setupLayout()
         loadData()
 
+        // Chat button action
         chatButton.addTarget(self, action: #selector(chatTapped), for: .touchUpInside)
 
+        // Listen for updates when technician changes request
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(refresh),
@@ -63,7 +86,9 @@ final class RequestDetailViewController: UIViewController {
         )
     }
 
-    // MARK: - Layout
+    // MARK: - Layout Setup
+
+    // Builds the UI layout
     private func setupLayout() {
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -89,23 +114,23 @@ final class RequestDetailViewController: UIViewController {
             contentStack.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -DS.Spacing.md * 2)
         ])
 
-        // Card
+        // Apply card style
         cardView.dsCard()
 
-        // Labels
+        // Labels styling
         titleLabel.font = DS.Font.section()
         locationLabel.font = DS.Font.body()
         priorityLabel.font = DS.Font.body()
         dateLabel.font = DS.Font.caption()
         dateLabel.textColor = DS.Color.subtext
 
-        // Image
+        // Image styling
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = DS.Radius.sm
         imageView.heightAnchor.constraint(equalToConstant: DS.Height.image).isActive = true
 
-        // ⭐ Rating UI
+        // ⭐ Rating display styling
         ratingLabel.font = .systemFont(ofSize: 22, weight: .bold)
         ratingLabel.textColor = .systemYellow
         ratingLabel.isHidden = true
@@ -115,7 +140,7 @@ final class RequestDetailViewController: UIViewController {
         commentLabel.textColor = DS.Color.text
         commentLabel.isHidden = true
 
-        // Buttons
+        // Button styling
         cancelButton.backgroundColor = .systemRed
         cancelButton.tintColor = .white
 
@@ -127,6 +152,7 @@ final class RequestDetailViewController: UIViewController {
         buttonStack.spacing = DS.Spacing.md
         buttonStack.distribution = .fillEqually
 
+        // Stack for request info
         let infoStack = UIStackView(arrangedSubviews: [
             titleLabel,
             locationLabel,
@@ -137,6 +163,7 @@ final class RequestDetailViewController: UIViewController {
         infoStack.axis = .vertical
         infoStack.spacing = DS.Spacing.sm
 
+        // Main card stack
         let cardStack = UIStackView(arrangedSubviews: [
             infoStack,
             imageView,
@@ -160,7 +187,9 @@ final class RequestDetailViewController: UIViewController {
         contentStack.addArrangedSubview(cardView)
     }
 
-    // MARK: - Data
+    // MARK: - Load Data
+
+    // Loads request data and updates UI
     private func loadData() {
         guard let request = store.requests.first(where: { $0.id == requestID }) else { return }
 
@@ -174,7 +203,7 @@ final class RequestDetailViewController: UIViewController {
 
         statusBadge.configure(status: request.status)
 
-        // Image
+        // Load request image if available
         imageView.isHidden = request.imageURL == nil
         if let urlString = request.imageURL,
            let url = URL(string: urlString) {
@@ -187,7 +216,7 @@ final class RequestDetailViewController: UIViewController {
             }.resume()
         }
 
-        // ⭐ Rating display
+        // ⭐ Show rating if request was rated
         ratingLabel.isHidden = true
         commentLabel.isHidden = true
 
@@ -201,7 +230,7 @@ final class RequestDetailViewController: UIViewController {
             }
         }
 
-        // Buttons
+        // Update buttons based on request status
         buttonStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         switch request.status {
@@ -221,35 +250,40 @@ final class RequestDetailViewController: UIViewController {
         default:
             break
         }
-
     }
 
     // MARK: - Actions
+
+    // Opens edit screen
     @objc private func editTapped() {
         let vc = EditRequestViewController(requestID: requestID)
         navigationController?.pushViewController(vc, animated: true)
     }
 
+    // Cancels the request
     @objc private func cancelTapped() {
         store.updateStatus(id: requestID, status: .cancelled)
         navigationController?.popViewController(animated: true)
     }
 
+    // Opens rating popup
     @objc private func rateTapped() {
         let vc = RatingViewController(requestID: requestID)
         present(vc, animated: true)
     }
 
-    // ✅ ADDED
+    // Opens chat screen
     @objc private func chatTapped() {
         let vc = ChatViewController(requestID: requestID)
         navigationController?.pushViewController(vc, animated: true)
     }
 
+    // Reload data when notification is received
     @objc private func refresh() {
         loadData()
     }
 
+    // Remove observer when controller is destroyed
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
