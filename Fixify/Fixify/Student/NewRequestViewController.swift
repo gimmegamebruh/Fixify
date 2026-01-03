@@ -1,8 +1,6 @@
 import UIKit
 import PhotosUI
 
-// This view controller allows the student to create a new maintenance request
-// The student fills the form, selects priority/category, and can upload one photo
 final class NewRequestViewController: UIViewController {
 
     // MARK: - Dependencies
