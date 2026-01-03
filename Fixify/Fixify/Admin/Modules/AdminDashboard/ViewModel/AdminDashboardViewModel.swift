@@ -20,7 +20,7 @@ final class AdminDashboardViewModel {
 
     var pendingRequests: Int {
         requests.filter {
-            $0.status == .pending || $0.status == .active
+            $0.status == .pending || $0.status == .assigned
         }.count
     }
 
