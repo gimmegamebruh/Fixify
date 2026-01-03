@@ -194,11 +194,15 @@ final class ProductsUsedViewController: UIViewController {
     
     private func showQuantityInput(for productId: String, name: String) {
         // First, fetch the product to check available quantity
-        FirebaseManager.shared.fetchProduct(byId: productId) { [weak self] (result: Result<Product, Error>) in
+        ProductService.shared.fetchProduct(byProductId: productId) { [weak self] (result: Result<Product?, Error>) in
             guard let self = self else { return }
             
             switch result {
             case .success(let product):
+                guard let product = product else {
+                    self.showAlert(message: "Product not found.")
+                    return
+                }
                 let availableQty = product.quantity
                 
                 let alert = UIAlertController(
@@ -378,14 +382,18 @@ final class ProductsUsedViewController: UIViewController {
         for product in productsToDeduct {
             dispatchGroup.enter()
             
-            FirebaseManager.shared.fetchProduct(byId: product.productId) { (result: Result<Product, Error>) in
+            ProductService.shared.fetchProduct(byProductId: product.productId) { (result: Result<Product?, Error>) in
                 defer { dispatchGroup.leave() }
                 
                 switch result {
                 case .success(let fetchedProduct):
+                    guard let fetchedProduct = fetchedProduct else {
+                        hasError = true
+                        return
+                    }
                     let newQuantity = max(0, fetchedProduct.quantity - product.quantity)
                     
-                    FirebaseManager.shared.updateProductQuantity(id: product.productId, newQuantity: newQuantity) { (updateResult: Result<Void, Error>) in
+                    ProductService.shared.updateQuantity(productId: product.productId, newQuantity: newQuantity) { (updateResult: Result<String, Error>) in
                         if case .failure = updateResult {
                             hasError = true
                         }
@@ -484,7 +492,7 @@ final class SelectProductViewController: UIViewController {
     }
     
     private func loadProducts() {
-        FirebaseManager.shared.fetchAllProducts { [weak self] result in
+        ProductService.shared.fetchAllProducts { [weak self] result in
             switch result {
             case .success(let products):
                 self?.products = products
