@@ -212,4 +212,148 @@ final class EditRequestViewController: UIViewController {
             UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissPicker))
         ]
 
-        priorit
+        priorityField.inputAccessoryView = toolbar
+        categoryField.inputAccessoryView = toolbar
+    }
+
+    // Closes the picker
+    @objc private func dismissPicker() {
+        view.endEditing(true)
+    }
+
+    // MARK: - Populate Fields
+
+    // Fill UI fields with existing request data
+    private func populateFields() {
+
+        titleField.text = request.title
+        locationField.text = request.location
+        priorityField.text = request.priority.rawValue.capitalized
+        categoryField.text = request.category
+        descriptionView.text = request.description
+
+        // Load image from URL if available
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                guard let data else { return }
+                DispatchQueue.main.async {
+                    self.photoView.image = UIImage(data: data)
+                }
+            }.resume()
+        }
+    }
+
+    // MARK: - Actions
+
+    // Opens photo picker
+    @objc private func changePhotoTapped() {
+
+        var config = PHPickerConfiguration()
+        config.filter = .images
+        config.selectionLimit = 1
+
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    // Saves updated request data
+    @objc private func saveTapped() {
+
+        // Validate inputs
+        guard
+            let title = titleField.text?.trimmingCharacters(in: .whitespaces), !title.isEmpty,
+            let location = locationField.text?.trimmingCharacters(in: .whitespaces), !location.isEmpty,
+            let priorityText = priorityField.text,
+            let category = categoryField.text,
+            !descriptionView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return }
+
+        let priority = RequestPriority(rawValue: priorityText.lowercased()) ?? .low
+
+        // Updates the request and saves it
+        func update(imageURL: String?) {
+            var updated = request!
+            updated.title = title
+            updated.location = location
+            updated.priority = priority
+            updated.category = category
+            updated.description = descriptionView.text
+            updated.imageURL = imageURL
+
+            store.updateRequest(updated)
+            navigationController?.popViewController(animated: true)
+        }
+
+        // Upload new image if selected
+        if let image = selectedImage {
+            CloudinaryUploadService.shared.upload(image: image) { url in
+                DispatchQueue.main.async {
+                    update(imageURL: url)
+                }
+            }
+        } else {
+            update(imageURL: request.imageURL)
+        }
+    }
+
+    // Helper function to style text fields
+    private func configure(_ tf: UITextField, _ placeholder: String) {
+        tf.placeholder = placeholder
+        tf.borderStyle = .roundedRect
+    }
+}
+
+// MARK: - Picker Delegates
+
+extension EditRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource {
+
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+
+    func pickerView(_ pickerView: UIPickerView,
+                    numberOfRowsInComponent component: Int) -> Int {
+        pickerView == priorityPicker ? priorities.count : categories.count
+    }
+
+    func pickerView(_ pickerView: UIPickerView,
+                    titleForRow row: Int,
+                    forComponent component: Int) -> String? {
+        pickerView == priorityPicker ? priorities[row] : categories[row]
+    }
+
+    func pickerView(_ pickerView: UIPickerView,
+                    didSelectRow row: Int,
+                    inComponent component: Int) {
+        if pickerView == priorityPicker {
+            priorityField.text = priorities[row]
+        } else {
+            categoryField.text = categories[row]
+        }
+    }
+}
+
+// MARK: - Photo Picker Delegate
+
+extension EditRequestViewController: PHPickerViewControllerDelegate {
+
+    func picker(_ picker: PHPickerViewController,
+                didFinishPicking results: [PHPickerResult]) {
+
+        picker.dismiss(animated: true)
+
+        guard let provider = results.first?.itemProvider,
+              provider.canLoadObject(ofClass: UIImage.self) else { return }
+
+        provider.loadObject(ofClass: UIImage.self) { image, _ in
+            guard let img = image as? UIImage else { return }
+            DispatchQueue.main.async {
+                self.photoView.image = img
+                self.selectedImage = img
+            }
+        }
+    }
+}
