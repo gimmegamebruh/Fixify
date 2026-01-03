@@ -1,7 +1,5 @@
 import UIKit
 
-// This view controller allows the student to rate a completed request
-// The student selects stars and can leave a short comment
 final class RatingViewController: UIViewController {
 
     // ID of the request being rated
