@@ -1,7 +1,6 @@
 import UIKit
 
-// This screen shows the full details of a maintenance request
-// Student can see status, image, rating, and perform actions like edit, cancel, rate, or chat
+
 final class RequestDetailViewController: UIViewController {
 
     // MARK: - Dependencies
