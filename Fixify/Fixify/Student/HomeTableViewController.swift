@@ -1,7 +1,6 @@
 import UIKit
 
-// This controller shows all maintenance requests created by the student
-// It displays the requests in a table view with options to edit or cancel
+
 final class HomeTableViewController: UITableViewController {
 
     // Shared store that contains all requests
