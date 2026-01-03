@@ -1,7 +1,5 @@
 import UIKit
 
-// This tab bar controller manages the main navigation for the student side
-// It contains Home, Notifications, Chat, and Settings tabs
 final class StudentTabBarController: UITabBarController {
 
     override func viewDidLoad() {
