@@ -105,6 +105,12 @@ final class AdminDashboardViewController: UIViewController {
         statsGrid.spacing = 16
 
         let addTech = primaryButton("Add New Technician")
+        
+        addTech.addTarget(
+                    self,
+                    action: #selector(manageTechTapped),
+                    for: .touchUpInside
+                )
 
         let inventory = primaryButton("Manage Inventory")
         inventory.addTarget(
@@ -244,4 +250,9 @@ final class AdminDashboardViewController: UIViewController {
         b.heightAnchor.constraint(equalToConstant: 52).isActive = true
         return b
     }
+    @objc private func manageTechTapped() {
+            let mtv = ManageTechnicianViewController()
+            navigationController?.pushViewController(mtv, animated: true)
+
+        }
 }
