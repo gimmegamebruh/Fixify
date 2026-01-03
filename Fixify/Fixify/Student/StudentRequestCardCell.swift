@@ -1,7 +1,6 @@
 import UIKit
 
-// Custom table view cell used to display a student's request as a card
-// Shows request info, image, status, and action buttons
+
 final class StudentRequestCardCell: UITableViewCell {
 
     // Reuse identifier for table view
