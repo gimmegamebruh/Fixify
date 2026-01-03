@@ -208,10 +208,20 @@ final class TechnicianRequestDetailViewController: UIViewController {
 
     @objc private func markActive() {
         updateStatus(.active)
+        showAlert(title: "Status Updated", message: "Request marked as active.")
     }
 
     @objc private func markCompleted() {
-        updateStatus(.completed)
+        // Navigate to products screen without updating status yet
+        let productsVC = ProductsUsedViewController(requestId: request.id)
+        
+        // Set completion handler to update status after products are handled
+        productsVC.onJobCompleted = { [weak self] in
+            guard let self = self else { return }
+            self.updateStatus(.completed)
+        }
+        
+        navigationController?.pushViewController(productsVC, animated: true)
     }
 
     @objc private func assignToMe() {
@@ -302,10 +312,9 @@ final class TechnicianRequestDetailViewController: UIViewController {
     private func updateStatus(_ status: RequestStatus) {
         guard request.status != status else { return }
         request.status = status
-        refreshUI()
         store.updateStatus(id: request.id, status: status)
         NotificationCenter.default.post(name: .technicianRequestsDidChange, object: nil)
-        showAlert(title: "Status Updated", message: "Request marked as \(status.rawValue).")
+        refreshUI()
     }
 
     @objc private func openChat() {
