@@ -1,115 +1,68 @@
 import UIKit
 import PhotosUI
 
-// This screen allows the student to edit an existing maintenance request
-// Student can only edit requests that are still pending
+// Edit existing request
 final class EditRequestViewController: UIViewController {
 
-    // MARK: - Dependencies
-
-    // Shared store that holds all requests
+    // Shared data
     private let store = RequestStore.shared
 
-    // ID of the request that we want to edit
+    // Request info
     private let requestID: String
-
-    // The actual request object (loaded using the ID)
     private var request: Request!
-
-    // Stores the new selected image if student changes it
     private var selectedImage: UIImage?
 
-    // MARK: - UI Elements
-
-    // Scroll view to allow scrolling when content is long
+    // UI
     private let scrollView = UIScrollView()
-
-    // Stack view to arrange UI elements vertically
     private let stack = UIStackView()
 
-    // Text fields for request details
     private let titleField = UITextField()
     private let locationField = UITextField()
     private let priorityField = UITextField()
     private let categoryField = UITextField()
 
-    // Text view for description (multi-line text)
     private let descriptionView = UITextView()
-
-    // Image view to show request photo
     private let photoView = UIImageView()
 
-    // Button to change the photo
     private let changePhotoButton = UIButton(type: .system)
-
-    // Button to save changes
     private let saveButton = UIButton(type: .system)
 
-    // MARK: - Picker Data
-
-    // Priority options for picker
+    // Picker data
     private let priorities = ["Low", "Medium", "High", "Urgent"]
+    private let categories = ["AC Issue", "Electrical", "Plumbing", "Furniture", "Network", "Other"]
 
-    // Category options for picker
-    private let categories = [
-        "AC Issue",
-        "Electrical",
-        "Plumbing",
-        "Furniture",
-        "Network",
-        "Other"
-    ]
-
-    // Picker views for priority and category
     private let priorityPicker = UIPickerView()
     private let categoryPicker = UIPickerView()
 
-    // MARK: - Initializer
-
-    // Custom initializer that receives request ID
+    // Init
     init(requestID: String) {
         self.requestID = requestID
         super.init(nibName: nil, bundle: nil)
     }
 
-    // Required initializer (not used)
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        fatalError("Not used")
     }
-
-    // MARK: - View Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Set background color
         view.backgroundColor = .systemBackground
         title = "Edit Request"
 
-        // Load request data
         loadRequest()
-
-        // Setup UI and pickers
         setupUI()
         setupPickers()
-
-        // Fill fields with existing request data
         populateFields()
     }
 
-    // MARK: - Load Request
-
-    // Loads the request using the provided ID
+    // Get request from store
     private func loadRequest() {
-
-        // Find the request from the store
         guard let req = store.requests.first(where: { $0.id == requestID }) else {
-            // If not found, go back
             navigationController?.popViewController(animated: true)
             return
         }
 
-        // Safety rule: student can only edit pending requests
         guard req.status == .pending else {
             navigationController?.popViewController(animated: true)
             return
@@ -118,9 +71,7 @@ final class EditRequestViewController: UIViewController {
         request = req
     }
 
-    // MARK: - UI Setup
-
-    // Creates and layouts all UI elements
+    // UI layout
     private func setupUI() {
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -131,7 +82,6 @@ final class EditRequestViewController: UIViewController {
         stack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(stack)
 
-        // Auto layout constraints
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -145,30 +95,25 @@ final class EditRequestViewController: UIViewController {
             stack.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -32)
         ])
 
-        // Configure text fields
         configure(titleField, "Title")
         configure(locationField, "Location")
         configure(priorityField, "Select Priority")
         configure(categoryField, "Select Category")
 
-        // Description styling
         descriptionView.font = .systemFont(ofSize: 16)
         descriptionView.layer.borderColor = UIColor.systemGray4.cgColor
         descriptionView.layer.borderWidth = 1
         descriptionView.layer.cornerRadius = 8
         descriptionView.heightAnchor.constraint(equalToConstant: 120).isActive = true
 
-        // Image styling
         photoView.contentMode = .scaleAspectFill
         photoView.clipsToBounds = true
         photoView.layer.cornerRadius = 12
         photoView.heightAnchor.constraint(equalToConstant: 180).isActive = true
 
-        // Change photo button
         changePhotoButton.setTitle("Change Photo", for: .normal)
         changePhotoButton.addTarget(self, action: #selector(changePhotoTapped), for: .touchUpInside)
 
-        // Save button
         saveButton.setTitle("Save Changes", for: .normal)
         saveButton.backgroundColor = .systemBlue
         saveButton.tintColor = .white
@@ -176,7 +121,6 @@ final class EditRequestViewController: UIViewController {
         saveButton.heightAnchor.constraint(equalToConstant: 50).isActive = true
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
-        // Add all elements to stack view
         [
             titleField,
             locationField,
@@ -189,22 +133,17 @@ final class EditRequestViewController: UIViewController {
         ].forEach { stack.addArrangedSubview($0) }
     }
 
-    // MARK: - Picker Setup
-
-    // Setup pickers for priority and category
+    // Pickers
     private func setupPickers() {
-
         priorityPicker.delegate = self
         priorityPicker.dataSource = self
 
         categoryPicker.delegate = self
         categoryPicker.dataSource = self
 
-        // Assign pickers to text fields
         priorityField.inputView = priorityPicker
         categoryField.inputView = categoryPicker
 
-        // Toolbar with Done button
         let toolbar = UIToolbar()
         toolbar.sizeToFit()
         toolbar.items = [
@@ -216,26 +155,20 @@ final class EditRequestViewController: UIViewController {
         categoryField.inputAccessoryView = toolbar
     }
 
-    // Closes the picker
     @objc private func dismissPicker() {
         view.endEditing(true)
     }
 
-    // MARK: - Populate Fields
-
-    // Fill UI fields with existing request data
+    // Fill fields
     private func populateFields() {
-
         titleField.text = request.title
         locationField.text = request.location
         priorityField.text = request.priority.rawValue.capitalized
         categoryField.text = request.category
         descriptionView.text = request.description
 
-        // Load image from URL if available
         if let urlString = request.imageURL,
            let url = URL(string: urlString) {
-
             URLSession.shared.dataTask(with: url) { data, _, _ in
                 guard let data else { return }
                 DispatchQueue.main.async {
@@ -245,11 +178,8 @@ final class EditRequestViewController: UIViewController {
         }
     }
 
-    // MARK: - Actions
-
-    // Opens photo picker
+    // Change photo
     @objc private func changePhotoTapped() {
-
         var config = PHPickerConfiguration()
         config.filter = .images
         config.selectionLimit = 1
@@ -259,10 +189,8 @@ final class EditRequestViewController: UIViewController {
         present(picker, animated: true)
     }
 
-    // Saves updated request data
+    // Save changes
     @objc private func saveTapped() {
-
-        // Validate inputs
         guard
             let title = titleField.text?.trimmingCharacters(in: .whitespaces), !title.isEmpty,
             let location = locationField.text?.trimmingCharacters(in: .whitespaces), !location.isEmpty,
@@ -273,7 +201,6 @@ final class EditRequestViewController: UIViewController {
 
         let priority = RequestPriority(rawValue: priorityText.lowercased()) ?? .low
 
-        // Updates the request and saves it
         func update(imageURL: String?) {
             var updated = request!
             updated.title = title
@@ -287,7 +214,6 @@ final class EditRequestViewController: UIViewController {
             navigationController?.popViewController(animated: true)
         }
 
-        // Upload new image if selected
         if let image = selectedImage {
             CloudinaryUploadService.shared.upload(image: image) { url in
                 DispatchQueue.main.async {
@@ -299,50 +225,36 @@ final class EditRequestViewController: UIViewController {
         }
     }
 
-    // Helper function to style text fields
     private func configure(_ tf: UITextField, _ placeholder: String) {
         tf.placeholder = placeholder
         tf.borderStyle = .roundedRect
     }
 }
 
-// MARK: - Picker Delegates
-
+// Picker logic
 extension EditRequestViewController: UIPickerViewDelegate, UIPickerViewDataSource {
 
-    func numberOfComponents(in pickerView: UIPickerView) -> Int {
-        return 1
-    }
+    func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    numberOfRowsInComponent component: Int) -> Int {
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         pickerView == priorityPicker ? priorities.count : categories.count
     }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    titleForRow row: Int,
-                    forComponent component: Int) -> String? {
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
         pickerView == priorityPicker ? priorities[row] : categories[row]
     }
 
-    func pickerView(_ pickerView: UIPickerView,
-                    didSelectRow row: Int,
-                    inComponent component: Int) {
-        if pickerView == priorityPicker {
-            priorityField.text = priorities[row]
-        } else {
-            categoryField.text = categories[row]
-        }
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        pickerView == priorityPicker
+            ? (priorityField.text = priorities[row])
+            : (categoryField.text = categories[row])
     }
 }
 
-// MARK: - Photo Picker Delegate
-
+// Photo picker
 extension EditRequestViewController: PHPickerViewControllerDelegate {
 
-    func picker(_ picker: PHPickerViewController,
-                didFinishPicking results: [PHPickerResult]) {
-
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         picker.dismiss(animated: true)
 
         guard let provider = results.first?.itemProvider,
