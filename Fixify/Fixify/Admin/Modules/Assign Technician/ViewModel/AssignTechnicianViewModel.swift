@@ -57,7 +57,7 @@ final class AssignTechnicianViewModel {
         }.count
     }
 
-    // MARK: - Assignment (🔥 FIXED)
+    // MARK: - Assignment
 
     func assignTechnician(
         _ technician: Technician,
@@ -68,17 +68,17 @@ final class AssignTechnicianViewModel {
             return
         }
 
-        // ✅ Assign technician + status
+        //  Assign technician + status
         request.assignedTechnicianID = technician.id
         request.status = .assigned
 
-        // ✅ Keep local state in sync
+        //  Keep local state in sync
         currentRequest = request
 
-        // ✅ Update store
+        // Update store
         requestStore.updateRequest(request)
 
-        // 🔥🔥🔥 MISSING PIECE 🔥🔥🔥
+        // MISSING PIECE 
         NotificationCenter.default.post(
             name: .technicianRequestsDidChange,
             object: nil

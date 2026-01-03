@@ -124,14 +124,14 @@ final class TechnicianMetricsViewController: UIViewController {
     private func loadTechnicians() {
 
         technicianService.fetchAll { [weak self] techs in
-            // ✅ MUST update UI on main thread
+            //  MUST update UI on main thread
             DispatchQueue.main.async {
                 guard let self else { return }
 
                 self.technicians = techs
                 self.buildTechnicianCircles()
 
-                // ✅ Auto-select first technician so the card is NOT empty
+                // Auto-select first technician so the card is NOT empty
                 if self.selectedTechnicianID == nil, let first = techs.first {
                     self.selectTechnician(first)
                 } else {

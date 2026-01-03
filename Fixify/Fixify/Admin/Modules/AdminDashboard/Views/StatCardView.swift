@@ -44,7 +44,6 @@ final class StatCardView: UIView {
             stack.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         
-        // Register for trait changes (iOS 17+)
         registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
             self.updateColorsForCurrentTraitCollection()
         }

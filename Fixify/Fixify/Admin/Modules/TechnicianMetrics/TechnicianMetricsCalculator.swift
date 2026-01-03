@@ -4,10 +4,6 @@ final class TechnicianMetricsCalculator {
 
     private let store = RequestStore.shared
 
-    /// Calculates technician metrics using ONLY Request data
-    /// - No Firebase writes
-    /// - No extra timestamps
-    /// - Same logic used everywhere (ASSIGNED + ACTIVE)
     func calculate(
         for technicianID: String,
         completion: @escaping (TechnicianMetrics) -> Void
@@ -55,7 +51,7 @@ final class TechnicianMetricsCalculator {
         // MARK: - Final Metrics
         let metrics = TechnicianMetrics(
             totalJobsCompleted: completedJobs.count,
-            pendingJobs: activeJobs.count, // 🔥 ASSIGNED + ACTIVE
+            pendingJobs: activeJobs.count, // ASSIGNED + ACTIVE
             averageCompletionTime: averageCompletionTime,
             customerRating: averageRating,
             totalReviews: ratings.count

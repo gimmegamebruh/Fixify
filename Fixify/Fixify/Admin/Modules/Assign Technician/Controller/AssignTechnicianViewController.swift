@@ -24,14 +24,14 @@ final class AssignTechnicianViewController: UIViewController {
 
         setupTableView()
 
-        // ✅ Bind reload callback
+        // Bind reload callback
         viewModel.onUpdate = { [weak self] in
             DispatchQueue.main.async {
                 self?.tableView.reloadData()
             }
         }
 
-        // ✅ Load data
+        //  Load data
         viewModel.load()
     }
 

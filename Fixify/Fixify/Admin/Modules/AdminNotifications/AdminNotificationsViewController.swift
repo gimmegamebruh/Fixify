@@ -140,7 +140,6 @@ final class AdminNotificationsViewController: UITableViewController {
     ) {
         let notification = notifications[indexPath.row]
 
-        // 🔥 Admin taps → open request details
         if let request = store.requests.first(where: { $0.id == notification.id.prefix(while: { $0 != "_" }) }) {
             let vc = AssignTechnicianViewController(requestID: request.id)
             navigationController?.pushViewController(vc, animated: true)

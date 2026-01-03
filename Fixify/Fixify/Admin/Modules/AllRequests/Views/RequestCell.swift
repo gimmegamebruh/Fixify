@@ -5,7 +5,7 @@ final class RequestCell: UITableViewCell {
     static let identifier = "RequestCell"
 
     var onAssignTap: (() -> Void)?
-    var onEscalateTap: (() -> Void)?   // 🔥 NEW (logic only)
+    var onEscalateTap: (() -> Void)?   
 
     // MARK: - UI
 

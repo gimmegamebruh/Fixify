@@ -10,7 +10,7 @@ extension UILabel {
             right: right
         )
 
-        // ⚠️ UILabel doesn't support padding natively,
+        //  UILabel doesn't support padding,
         // so we adjust drawing rect
         let originalBounds = bounds
         let paddedBounds = originalBounds.inset(by: inset)

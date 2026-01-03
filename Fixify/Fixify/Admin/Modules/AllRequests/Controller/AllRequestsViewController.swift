@@ -46,7 +46,7 @@ final class AllRequestsViewController: UIViewController {
 
     @objc private func toggleFilterDropdown() {
 
-        // If already visible → hide
+        // If already visible hide
         if let dropdown = filterDropdown {
             dropdown.removeFromSuperview()
             filterDropdown = nil
@@ -76,7 +76,7 @@ final class AllRequestsViewController: UIViewController {
     // MARK: - Reload
 
     @objc private func reload() {
-        displayedRequests = viewModel.filtered(currentFilter) // ✅ CHANGED
+        displayedRequests = viewModel.filtered(currentFilter) 
         tableView.reloadData()
     }
 
