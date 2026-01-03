@@ -9,7 +9,6 @@ final class AdminTabBarController: UITabBarController {
 
     private func setupTabs() {
 
-        // 🔥 ADMIN DASHBOARD (REAL)
         let homeVC = UINavigationController(
             rootViewController: AdminDashboardViewController()
         )
