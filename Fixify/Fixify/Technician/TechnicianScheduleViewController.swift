@@ -2,32 +2,6 @@ import UIKit
 
 final class TechnicianScheduleViewController: UITableViewController {
 
-    private enum StatusFilter: Int, CaseIterable {
-        case all, active, pending, cancelled, completed
-
-        var title: String {
-            switch self {
-            case .all: return "All"
-            case .active: return "Active"
-            case .pending: return "Pending"
-            case .cancelled: return "Cancelled"
-            case .completed: return "Completed"
-            }
-        }
-    }
-
-    private enum ScheduleSort: Int, CaseIterable {
-        case newest
-        case oldest
-
-        var title: String {
-            switch self {
-            case .newest: return "Schedule: Newest"
-            case .oldest: return "Schedule: Oldest"
-            }
-        }
-    }
-
     private enum PriorityFilter: Int, CaseIterable {
         case all, low, medium, high, urgent
 
@@ -56,17 +30,13 @@ final class TechnicianScheduleViewController: UITableViewController {
 
     private let store = RequestStore.shared
     private let infoLabel = UILabel()
-    private let scheduleSortControl = UISegmentedControl()
     private let dateFilterControl = UISegmentedControl()
     private let priorityControl = UISegmentedControl()
     private let assignmentControl = UISegmentedControl()
-    private let statusControl = UISegmentedControl()
 
-    private var scheduleSort: ScheduleSort = .newest
     private var dateFilter: RequestDateFilter = .all
     private var priorityFilter: PriorityFilter = .all
     private var assignmentSourceFilter: AssignmentSourceFilter = .all
-    private var statusFilter: StatusFilter = .all
 
     private var scheduled: [Request] {
         store.requests.filter { request in
@@ -77,19 +47,14 @@ final class TechnicianScheduleViewController: UITableViewController {
 
     private var filteredScheduled: [Request] {
         scheduled
+            .filter { $0.status != .cancelled && $0.status != .completed }
             .filter { matchesDate($0) }
             .filter { matchesPriority($0) }
             .filter { matchesAssignmentSource($0) }
-            .filter { matchesStatus($0) }
             .sorted { lhs, rhs in
                 let leftDate = selectedDate(for: lhs)
                 let rightDate = selectedDate(for: rhs)
-                switch scheduleSort {
-                case .newest:
-                    return leftDate > rightDate
-                case .oldest:
-                    return leftDate < rightDate
-                }
+                return leftDate > rightDate
             }
     }
 
@@ -122,20 +87,6 @@ final class TechnicianScheduleViewController: UITableViewController {
         infoLabel.numberOfLines = 0
         infoLabel.textColor = .label
 
-        scheduleSortControl.removeAllSegments()
-        ScheduleSort.allCases.enumerated().forEach { idx, sort in
-            scheduleSortControl.insertSegment(withTitle: sort.title, at: idx, animated: false)
-        }
-        scheduleSortControl.selectedSegmentIndex = scheduleSort.rawValue
-        scheduleSortControl.addTarget(self, action: #selector(scheduleSortChanged), for: .valueChanged)
-
-        statusControl.removeAllSegments()
-        StatusFilter.allCases.enumerated().forEach { idx, filter in
-            statusControl.insertSegment(withTitle: filter.title, at: idx, animated: false)
-        }
-        statusControl.selectedSegmentIndex = statusFilter.rawValue
-        statusControl.addTarget(self, action: #selector(statusChanged), for: .valueChanged)
-
         dateFilterControl.removeAllSegments()
         RequestDateFilter.allCases.enumerated().forEach { idx, filter in
             dateFilterControl.insertSegment(withTitle: filter.title, at: idx, animated: false)
@@ -159,8 +110,6 @@ final class TechnicianScheduleViewController: UITableViewController {
 
         let stack = UIStackView(arrangedSubviews: [
             infoLabel,
-            scheduleSortControl,
-            statusControl,
             dateFilterControl,
             priorityControl,
             assignmentControl
@@ -180,7 +129,7 @@ final class TechnicianScheduleViewController: UITableViewController {
             stack.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -12)
         ])
 
-        header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 230)
+        header.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 190)
         tableView.tableHeaderView = header
         updateHeader()
     }
@@ -188,7 +137,7 @@ final class TechnicianScheduleViewController: UITableViewController {
     private func updateHeader() {
         let assignedCount = scheduled.count
         let count = filteredScheduled.count
-        infoLabel.text = "Assigned to you: \(assignedCount) • Showing: \(count) • Sort: \(scheduleSort.title.lowercased()) • Priority: \(priorityFilter.title)"
+        infoLabel.text = "Assigned to you: \(assignedCount) • Showing: \(count) • Priority: \(priorityFilter.title)"
     }
 
     @objc private func reload() {
@@ -196,16 +145,6 @@ final class TechnicianScheduleViewController: UITableViewController {
         updateEmptyState()
         tableView.reloadData()
         tableView.refreshControl?.endRefreshing()
-    }
-
-    @objc private func scheduleSortChanged() {
-        scheduleSort = ScheduleSort(rawValue: scheduleSortControl.selectedSegmentIndex) ?? .newest
-        reload()
-    }
-
-    @objc private func statusChanged() {
-        statusFilter = StatusFilter(rawValue: statusControl.selectedSegmentIndex) ?? .all
-        reload()
     }
 
     @objc private func dateFilterChanged() {
@@ -273,21 +212,6 @@ final class TechnicianScheduleViewController: UITableViewController {
         }
     }
 
-    private func matchesStatus(_ request: Request) -> Bool {
-        switch statusFilter {
-        case .all:
-            return request.status != .cancelled && request.status != .completed
-        case .active:
-            return request.status == .active
-        case .pending:
-            return request.status == .pending || request.status == .assigned
-        case .cancelled:
-            return request.status == .cancelled
-        case .completed:
-            return request.status == .completed
-        }
-    }
-
     private func selectedDate(for request: Request) -> Date {
         return request.scheduledTime ?? request.dateCreated
     }
@@ -323,6 +247,8 @@ private final class TechnicianScheduleCell: UITableViewCell {
     private let metaLabel = UILabel()
     private let badge = PaddingLabel()
     private let container = UIView()
+    private let photoView = UIImageView()
+    private var imageTask: URLSessionDataTask?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -354,6 +280,22 @@ private final class TechnicianScheduleCell: UITableViewCell {
         badge.textColor = .systemOrange
 
         container.layer.borderColor = request.priority.color.withAlphaComponent(0.7).cgColor
+
+        imageTask?.cancel()
+        photoView.image = nil
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+            photoView.isHidden = false
+            imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data, let self else { return }
+                DispatchQueue.main.async {
+                    self.photoView.image = UIImage(data: data)
+                }
+            }
+            imageTask?.resume()
+        } else {
+            photoView.isHidden = true
+        }
     }
 
     private func setupUI() {
@@ -372,7 +314,13 @@ private final class TechnicianScheduleCell: UITableViewCell {
         badge.layer.cornerRadius = 6
         badge.clipsToBounds = true
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, metaLabel, badge])
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = 10
+        photoView.heightAnchor.constraint(equalToConstant: 140).isActive = true
+        photoView.backgroundColor = .secondarySystemBackground
+
+        let stack = UIStackView(arrangedSubviews: [photoView, titleLabel, metaLabel, badge])
         stack.axis = .vertical
         stack.spacing = 6
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -391,5 +339,12 @@ private final class TechnicianScheduleCell: UITableViewCell {
             stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
             stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12)
         ])
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        photoView.image = nil
+        photoView.isHidden = true
     }
 }

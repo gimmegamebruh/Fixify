@@ -58,6 +58,8 @@ private final class TechnicianHistoryCell: UITableViewCell {
     private let ratingLabel = UILabel()
     private let resolutionLabel = UILabel()
     private let container = UIView()
+    private let photoView = UIImageView()
+    private var imageTask: URLSessionDataTask?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -79,13 +81,29 @@ private final class TechnicianHistoryCell: UITableViewCell {
             ratingLabel.text = "No rating yet"
             ratingLabel.textColor = .tertiaryLabel
         }
+
+        imageTask?.cancel()
+        photoView.image = nil
+        if let urlString = request.imageURL,
+           let url = URL(string: urlString) {
+            photoView.isHidden = false
+            imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let data, let self else { return }
+                DispatchQueue.main.async {
+                    self.photoView.image = UIImage(data: data)
+                }
+            }
+            imageTask?.resume()
+        } else {
+            photoView.isHidden = true
+        }
     }
 
     private func setup() {
         container.layer.cornerRadius = 12
         container.backgroundColor = .systemBackground
-        container.layer.borderWidth = 1
-        container.layer.borderColor = UIColor.separator.cgColor
+        container.layer.borderWidth = 2
+        container.layer.borderColor = UIColor.separator.withAlphaComponent(0.8).cgColor
         container.translatesAutoresizingMaskIntoConstraints = false
 
         titleLabel.font = .boldSystemFont(ofSize: 17)
@@ -96,7 +114,13 @@ private final class TechnicianHistoryCell: UITableViewCell {
         resolutionLabel.font = .systemFont(ofSize: 12)
         resolutionLabel.textColor = .tertiaryLabel
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, locationLabel, resolutionLabel, ratingLabel])
+        photoView.contentMode = .scaleAspectFill
+        photoView.clipsToBounds = true
+        photoView.layer.cornerRadius = 10
+        photoView.heightAnchor.constraint(equalToConstant: 140).isActive = true
+        photoView.backgroundColor = .secondarySystemBackground
+
+        let stack = UIStackView(arrangedSubviews: [photoView, titleLabel, locationLabel, resolutionLabel, ratingLabel])
         stack.axis = .vertical
         stack.spacing = 6
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -122,5 +146,12 @@ private final class TechnicianHistoryCell: UITableViewCell {
         df.dateStyle = .medium
         df.timeStyle = .short
         return df.string(from: date)
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageTask?.cancel()
+        photoView.image = nil
+        photoView.isHidden = true
     }
 }
